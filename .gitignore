@@ -1,0 +1,26 @@
+# Python / Langflow
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+ENV/
+
+# Database files (Langflow biasanya menyimpan data di SQLite)
+*.db
+*.sqlite
+*.sqlite3
+
+# Environment Variables (PENTING untuk menjaga API Key DeepSeek)
+.env
+.env.*
+!.env.example
+
+# IDE / OS Files
+.vscode/
+.idea/
+.DS_Store
+
+# Node
+node_modules/
