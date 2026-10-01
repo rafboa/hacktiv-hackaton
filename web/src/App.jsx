@@ -1,55 +1,199 @@
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useCallback } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import './App.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+// Screens
+import SplashScreen from './screens/SplashScreen'
+import LoginScreen from './screens/LoginScreen'
+import HomeScreen from './screens/HomeScreen'
+import QuestionScreen from './screens/QuestionScreen'
+import SummaryScreen from './screens/SummaryScreen'
 
-  const speak = (text) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = 'id-ID'; // Bahasa Indonesia
-      window.speechSynthesis.speak(utterance);
-    } else {
-      alert("Browser Anda tidak mendukung fitur suara.");
+// Utils
+import { sampleQuestions } from './utils/sampleQuestions'
+
+/**
+ * App — Main application controller
+ * 
+ * Flow: Splash → Login → Home → Question → Summary → (Home)
+ * 
+ * State machine manages screen transitions with AnimatePresence
+ * for smooth enter/exit animations between screens.
+ */
+
+// Screen transition variants
+const screenVariants = {
+  initial: { opacity: 0, scale: 0.97 },
+  animate: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } },
+  exit: { opacity: 0, scale: 1.02, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } },
+}
+
+function App() {
+  // ─── App State ───
+  const [screen, setScreen] = useState('splash') // splash | login | home | question | summary
+  const [playerName, setPlayerName] = useState('')
+  const [selectedMode, setSelectedMode] = useState(null)
+  const [results, setResults] = useState([])
+
+  // ─── Screen Handlers ───
+
+  // Splash → Login
+  const handleStart = useCallback(() => {
+    setScreen('login')
+  }, [])
+
+  // Login → Home
+  const handleLogin = useCallback((name) => {
+    setPlayerName(name)
+    setScreen('home')
+  }, [])
+
+  // Home → Question (select a practice mode)
+  const handleSelectMode = useCallback((mode) => {
+    setSelectedMode(mode)
+    setScreen('question')
+  }, [])
+
+  // Home ← Logout
+  const handleLogout = useCallback(() => {
+    setPlayerName('')
+    setScreen('login')
+  }, [])
+
+  // Question → Summary
+  const handleFinish = useCallback((questionResults) => {
+    setResults(questionResults)
+    setScreen('summary')
+  }, [])
+
+  // Summary → Home (play again)
+  const handleRestart = useCallback(() => {
+    setResults([])
+    setScreen('home')
+  }, [])
+
+  // Summary → Home
+  const handleGoHome = useCallback(() => {
+    setResults([])
+    setScreen('home')
+  }, [])
+
+  // Corner bar menu action handler (shared across screens)
+  const handleMenuAction = useCallback((action) => {
+    switch (action) {
+      case 'home':
+        setResults([])
+        setScreen('home')
+        break
+      case 'restart':
+        setResults([])
+        setScreen('question')
+        break
+      case 'finish':
+        setScreen('summary')
+        break
+      default:
+        break
     }
-  }
+  }, [])
+
+  // ─── Filter questions by mode ───
+  const getQuestionsForMode = useCallback((mode) => {
+    switch (mode) {
+      case 'addition':
+        return sampleQuestions.filter(q => q.question.includes('+'))
+      case 'subtraction':
+        return sampleQuestions.filter(q => q.question.includes('-'))
+      case 'story':
+        // Use a mix for story mode
+        return sampleQuestions.slice(0, 5)
+      case 'mixed':
+      default:
+        return sampleQuestions
+    }
+  }, [])
 
   return (
-    <div className="min-h-screen bg-[#fdfbf7] flex flex-col items-center justify-center p-8 text-slate-800">
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        Pendamping Belajar Matematika
-      </h1>
-      
-      <div className="flex gap-4 mb-8">
-        {[...Array(5)].map((_, i) => (
+    <div className="min-h-screen relative overflow-hidden" style={{ backgroundColor: 'var(--bg-cream)' }}>
+      {/* Film grain noise overlay — always present */}
+      <div className="noise-overlay" />
+
+      {/* Screen router with enter/exit animations */}
+      <AnimatePresence mode="wait">
+        {screen === 'splash' && (
           <motion.div
-            key={i}
-            initial={{ y: -50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: i * 0.1 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            className="w-16 h-16 bg-blue-500 rounded-lg shadow-md cursor-pointer flex items-center justify-center text-white font-bold text-2xl"
-            onClick={() => speak(`Satu balok ditekan`)}
+            key="splash"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
           >
-            {i + 1}
+            <SplashScreen onStart={handleStart} />
           </motion.div>
-        ))}
-      </div>
+        )}
 
-      <div className="flex flex-col gap-4">
-        <button 
-          onClick={() => speak("Halo, mari kita belajar penjumlahan!")}
-          className="px-6 py-3 bg-green-500 text-white font-bold rounded-full shadow-lg hover:bg-green-600 transition-colors"
-        >
-          Tes Suara (Web Speech API)
-        </button>
-      </div>
+        {screen === 'login' && (
+          <motion.div
+            key="login"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <LoginScreen onLogin={handleLogin} />
+          </motion.div>
+        )}
 
-      <p className="mt-8 text-gray-500 max-w-md text-center">
-        Project web (React + Vite + Tailwind + Framer Motion) siap digunakan! Agent AI akan memandu lewat suara.
-      </p>
+        {screen === 'home' && (
+          <motion.div
+            key="home"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <HomeScreen
+              playerName={playerName}
+              onSelectMode={handleSelectMode}
+              onLogout={handleLogout}
+            />
+          </motion.div>
+        )}
+
+        {screen === 'question' && (
+          <motion.div
+            key="question"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <QuestionScreen
+              playerName={playerName}
+              questions={getQuestionsForMode(selectedMode)}
+              onFinish={handleFinish}
+            />
+          </motion.div>
+        )}
+
+        {screen === 'summary' && (
+          <motion.div
+            key="summary"
+            variants={screenVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+          >
+            <SummaryScreen
+              playerName={playerName}
+              results={results}
+              totalQuestions={getQuestionsForMode(selectedMode).length}
+              onRestart={handleRestart}
+              onHome={handleGoHome}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

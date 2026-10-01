@@ -1,25 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #fdfbf7; /* Off-white/cream background as in PRD */
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --bg-cream: #FDF8F0;
+  --bg-card: #FFFFFF;
+  --bg-surface: #F5EFE6;
+  --blue-500: #4A90D9;
+  --blue-400: #6BA3E0;
+  --blue-100: #E8F1FB;
+  --orange-500: #F0883E;
+  --orange-400: #F4A261;
+  --orange-100: #FFF0E0;
+  --green-500: #34C759;
+  --green-100: #E6F9ED;
+  --yellow-500: #FFD60A;
+  --yellow-100: #FFF9DB;
+  --text-primary: #2C2C2C;
+  --text-secondary: #888888;
+  --text-accent: #4A90D9;
+  --accent-lime: #C8FF00;
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
   min-height: 100vh;
-  color: #333;
+  background-color: var(--bg-cream);
+  color: var(--text-primary);
+  font-family: 'Inter Tight', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.noise-overlay {
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.03;
+  pointer-events: none;
+  z-index: 9999;
 }
