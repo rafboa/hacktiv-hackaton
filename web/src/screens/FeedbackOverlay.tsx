@@ -2,9 +2,16 @@ import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WobbleButton from '../components/WobbleButton';
 
-const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }) => {
+interface FeedbackOverlayProps {
+  isCorrect: boolean;
+  equation: string;
+  playerName: string;
+  onNext: () => void;
+}
+
+const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }: FeedbackOverlayProps) => {
   useEffect(() => {
-    let timer;
+    let timer: ReturnType<typeof setTimeout>;
     if (isCorrect) {
       timer = setTimeout(() => {
         onNext();
@@ -43,7 +50,7 @@ const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }) => {
                 transition={{ duration: 1.5, ease: "easeOut" }}
               />
             ))}
-            
+
             <motion.div
               initial={{ scale: 0 }}
               animate={{ scale: [1.5, 1] }}
@@ -52,7 +59,7 @@ const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }) => {
             >
               🎉
             </motion.div>
-            
+
             <motion.h2
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -61,7 +68,7 @@ const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }) => {
             >
               Hebat, {playerName}!
             </motion.h2>
-            
+
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -91,7 +98,7 @@ const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }) => {
             >
               🤗
             </motion.div>
-            
+
             <motion.h2
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -99,7 +106,7 @@ const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }) => {
             >
               Tidak apa-apa!
             </motion.h2>
-            
+
             <motion.div
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -117,7 +124,7 @@ const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }) => {
             >
               {equation}
             </motion.div>
-            
+
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

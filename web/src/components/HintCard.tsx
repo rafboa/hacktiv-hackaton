@@ -2,16 +2,28 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { springs } from '../utils/springs';
 
-export default function HintCard({ level = 1, text, onDismiss }) {
+interface HintCardProps {
+  level?: number;
+  text?: string;
+  onDismiss?: () => void;
+}
+
+interface HintLevelConfig {
+  icon: string;
+  bg: string;
+  border: string;
+}
+
+export default function HintCard({ level = 1, text, onDismiss }: HintCardProps) {
   const [isVisible, setIsVisible] = useState(true);
 
-  const levels = {
+  const levels: Record<number, HintLevelConfig> = {
     1: { icon: '💡', bg: 'bg-[#FFF9DB]', border: 'border-l-4 border-[#FFD60A]' },
-    2: { icon: '🧩', bg: 'bg-[#FFF9DB]', border: '' },
+    2: { icon: '🔍', bg: 'bg-[#FFF9DB]', border: '' },
     3: { icon: '🎯', bg: 'bg-[#FFF9DB]', border: '' }
   };
 
-  const config = levels[level] || levels[1];
+  const config = levels[level] ?? levels[1];
 
   const handleDismiss = () => {
     setIsVisible(false);
@@ -25,7 +37,7 @@ export default function HintCard({ level = 1, text, onDismiss }) {
           initial={{ y: 50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 50, opacity: 0 }}
-          transition={springs?.wobbly || { type: 'spring', stiffness: 200, damping: 12 }}
+          transition={springs?.wobbly ?? { type: 'spring', stiffness: 200, damping: 12 }}
           className={`flex items-start gap-4 p-4 rounded-xl shadow-md ${config.bg} ${config.border} max-w-sm relative`}
         >
           <motion.div
@@ -45,12 +57,12 @@ export default function HintCard({ level = 1, text, onDismiss }) {
             <p className="text-[#2C2C2C] font-medium leading-relaxed">{text}</p>
             {level === 3 && (
               <span className="text-xs text-[#888] mt-2 block font-semibold animate-pulse">
-                ▶ Auto-playing...
+                🔊 Auto-playing...
               </span>
             )}
           </div>
           <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-700 font-bold ml-2">
-            ×
+            ✕
           </button>
         </motion.div>
       )}

@@ -1,8 +1,10 @@
 // Framer Motion Spring Configurations
-export const bouncy = { type: 'spring', stiffness: 300, damping: 15 };
-export const wobbly = { type: 'spring', stiffness: 180, damping: 12 };
-export const gentle = { type: 'spring', stiffness: 120, damping: 20 };
-export const snappy = { type: 'spring', stiffness: 500, damping: 25 };
+import type { Transition } from 'framer-motion';
+
+export const bouncy: Transition = { type: 'spring', stiffness: 300, damping: 15 };
+export const wobbly: Transition = { type: 'spring', stiffness: 180, damping: 12 };
+export const gentle: Transition = { type: 'spring', stiffness: 120, damping: 20 };
+export const snappy: Transition = { type: 'spring', stiffness: 500, damping: 25 };
 
 // Grouped object for convenience: import { springs } from './springs'
 export const springs = { bouncy, wobbly, gentle, snappy };

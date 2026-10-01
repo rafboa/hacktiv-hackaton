@@ -12,11 +12,21 @@ import SummaryScreen from './screens/SummaryScreen'
 // Utils
 import { sampleQuestions } from './utils/sampleQuestions'
 
+type Screen = 'splash' | 'login' | 'home' | 'question' | 'summary'
+type Mode = 'addition' | 'subtraction' | 'story' | 'mixed' | null
+
+interface QuestionResult {
+  questionIndex: number;
+  correct: boolean;
+  attempts: number;
+  hintsUsed: number;
+}
+
 /**
  * App — Main application controller
- * 
+ *
  * Flow: Splash → Login → Home → Question → Summary → (Home)
- * 
+ *
  * State machine manages screen transitions with AnimatePresence
  * for smooth enter/exit animations between screens.
  */
@@ -29,13 +39,13 @@ const screenVariants = {
 }
 
 function App() {
-  // ─── App State ───
-  const [screen, setScreen] = useState('splash') // splash | login | home | question | summary
+  // ══ App State ══
+  const [screen, setScreen] = useState<Screen>('splash')
   const [playerName, setPlayerName] = useState('')
-  const [selectedMode, setSelectedMode] = useState(null)
-  const [results, setResults] = useState([])
+  const [selectedMode, setSelectedMode] = useState<Mode>(null)
+  const [results, setResults] = useState<QuestionResult[]>([])
 
-  // ─── Screen Handlers ───
+  // ══ Screen Handlers ══
 
   // Splash → Login
   const handleStart = useCallback(() => {
@@ -43,25 +53,25 @@ function App() {
   }, [])
 
   // Login → Home
-  const handleLogin = useCallback((name) => {
+  const handleLogin = useCallback((name: string) => {
     setPlayerName(name)
     setScreen('home')
   }, [])
 
   // Home → Question (select a practice mode)
-  const handleSelectMode = useCallback((mode) => {
-    setSelectedMode(mode)
+  const handleSelectMode = useCallback((mode: string) => {
+    setSelectedMode(mode as Mode)
     setScreen('question')
   }, [])
 
-  // Home ← Logout
+  // Home → Logout
   const handleLogout = useCallback(() => {
     setPlayerName('')
     setScreen('login')
   }, [])
 
   // Question → Summary
-  const handleFinish = useCallback((questionResults) => {
+  const handleFinish = useCallback((questionResults: QuestionResult[]) => {
     setResults(questionResults)
     setScreen('summary')
   }, [])
@@ -79,7 +89,7 @@ function App() {
   }, [])
 
   // Corner bar menu action handler (shared across screens)
-  const handleMenuAction = useCallback((action) => {
+  const handleMenuAction = useCallback((action: string) => {
     switch (action) {
       case 'home':
         setResults([])
@@ -97,8 +107,8 @@ function App() {
     }
   }, [])
 
-  // ─── Filter questions by mode ───
-  const getQuestionsForMode = useCallback((mode) => {
+  // ══ Filter questions by mode ══
+  const getQuestionsForMode = useCallback((mode: Mode) => {
     switch (mode) {
       case 'addition':
         return sampleQuestions.filter(q => q.question.includes('+'))

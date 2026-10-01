@@ -1,8 +1,19 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function Mascot({ state = 'idle' }) {
-  const states = {
+export type MascotState = 'idle' | 'thinking' | 'happy' | 'encourage' | 'speaking';
+
+interface MascotProps {
+  state?: MascotState;
+}
+
+interface MascotConfig {
+  emoji: string;
+  animation: object;
+}
+
+export default function Mascot({ state = 'idle' }: MascotProps) {
+  const states: Record<MascotState, MascotConfig> = {
     idle: { emoji: '🤖', animation: { y: [0, -4, 0], transition: { duration: 2.5, repeat: Infinity, ease: 'easeInOut' } } },
     thinking: { emoji: '🤔', animation: { y: [0, -8, 0], transition: { duration: 0.8, repeat: Infinity } } },
     happy: { emoji: '🥳', animation: { scale: [1, 1.3, 1], rotate: [0, -10, 10, -10, 0], transition: { duration: 0.6 } } },
@@ -10,7 +21,7 @@ export default function Mascot({ state = 'idle' }) {
     speaking: { emoji: '🗣️', animation: { scale: [1, 1.05, 1], transition: { duration: 0.3, repeat: Infinity } } }
   };
 
-  const current = states[state] || states.idle;
+  const current = states[state] ?? states.idle;
 
   return (
     <div className="w-20 h-20 flex flex-col items-center justify-center z-50">

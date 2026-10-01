@@ -1,7 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-export default function ProgressDots({ total, current, correct = [] }) {
+interface ProgressDotsProps {
+  total: number;
+  current: number;
+  correct?: number[];
+}
+
+export default function ProgressDots({ total, current, correct = [] }: ProgressDotsProps) {
   const dots = Array.from({ length: total }, (_, i) => i);
 
   return (
@@ -10,7 +16,7 @@ export default function ProgressDots({ total, current, correct = [] }) {
         const isCurrent = dotIndex === current;
         const isCompleted = dotIndex < current;
         const isCorrect = correct.includes(dotIndex);
-        
+
         let bgColor = 'bg-transparent';
         let borderColor = 'border-gray-300';
         let scale = 1;

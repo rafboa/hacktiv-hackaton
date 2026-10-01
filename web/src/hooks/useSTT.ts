@@ -1,27 +1,44 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 
-export const useSTT = () => {
+// Extend Window interface for SpeechRecognition (non-standard browser API)
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
+
+interface UseSTTReturn {
+  startListening: () => void;
+  stopListening: () => void;
+  transcript: string;
+  isListening: boolean;
+  isSupported: boolean;
+  resetTranscript: () => void;
+}
+
+export const useSTT = (): UseSTTReturn => {
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
-  const recognitionRef = useRef(null);
+  const recognitionRef = useRef<InstanceType<typeof SpeechRecognition> | null>(null);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
+      const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognitionAPI) {
         setIsSupported(true);
-        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current = new SpeechRecognitionAPI();
         recognitionRef.current.lang = 'id-ID';
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = false;
 
-        recognitionRef.current.onresult = (event) => {
+        recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
           const currentTranscript = event.results[0][0].transcript;
           setTranscript(currentTranscript);
         };
 
-        recognitionRef.current.onerror = (event) => {
+        recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
           console.error('SpeechRecognition error:', event.error);
           setIsListening(false);
         };

@@ -7,12 +7,24 @@ import Mascot from '../components/Mascot';
 import SpeechBubble from '../components/SpeechBubble';
 import { fadeUp, containerVariants } from '../utils/springs';
 
-const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, onHome }) => {
+interface QuestionResult {
+  correct: boolean;
+}
+
+interface SummaryScreenProps {
+  playerName: string;
+  results?: QuestionResult[];
+  totalQuestions: number;
+  onRestart: () => void;
+  onHome: () => void;
+}
+
+const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, onHome }: SummaryScreenProps) => {
   const [countedCorrect, setCountedCorrect] = useState(0);
-  
+
   const correctCount = results.filter(r => r.correct).length;
   const percentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
-  
+
   let stars = '🌟';
   if (percentage > 80) stars = '🌟🌟🌟';
   else if (percentage > 50) stars = '🌟🌟';
@@ -33,9 +45,9 @@ const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, on
   return (
     <div className="min-h-screen bg-[#FDF8F0] flex flex-col relative overflow-hidden p-4 md:p-8">
       <CornerBar playerName="Selesai!" currentQuestion={totalQuestions} totalQuestions={totalQuestions} onMenuAction={onHome} />
-      
+
       <main className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl mx-auto z-10 pt-10">
-        <motion.h1 
+        <motion.h1
           variants={fadeUp}
           initial="hidden"
           animate="show"
@@ -52,13 +64,13 @@ const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, on
         >
           <JiggleCard className="bg-white rounded-[2.5rem] p-8 md:p-12 shadow-xl border-4 border-gray-100 flex flex-col items-center">
             <div className="text-7xl mb-8 tracking-widest">{stars}</div>
-            
+
             <div className="w-full flex flex-col gap-8 mb-8">
               <div className="flex justify-between items-center text-xl md:text-2xl">
                 <span className="text-[#888] font-bold">Soal dikerjakan:</span>
                 <span className="text-3xl font-black text-[#2C2C2C]">{totalQuestions}</span>
               </div>
-              
+
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center text-xl md:text-2xl">
                   <span className="text-[#888] font-bold">Jawaban benar:</span>
@@ -66,7 +78,7 @@ const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, on
                 </div>
                 {/* Progress bar */}
                 <div className="h-6 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner">
-                  <motion.div 
+                  <motion.div
                     className="h-full bg-[#34C759] rounded-full"
                     initial={{ width: 0 }}
                     animate={{ width: `${percentage}%` }}
@@ -78,7 +90,7 @@ const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, on
           </JiggleCard>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.5 }}
@@ -95,7 +107,7 @@ const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, on
 
       <div className="fixed bottom-6 left-6 z-20 flex items-end gap-4 pointer-events-none">
         <Mascot state="happy" />
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.8, x: -20 }}
           animate={{ opacity: 1, scale: 1, x: 0 }}
           transition={{ delay: 0.5, type: 'spring' }}

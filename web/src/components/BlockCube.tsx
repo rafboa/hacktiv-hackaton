@@ -2,15 +2,23 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { springs } from '../utils/springs';
 
-export default function BlockCube({ count, color = 'blue', onRemove, animated = true, delay = 0 }) {
+interface BlockCubeProps {
+  count: number;
+  color?: string;
+  onRemove?: (index: number) => void;
+  animated?: boolean;
+  delay?: number;
+}
+
+export default function BlockCube({ count, color = 'blue', onRemove, animated = true, delay = 0 }: BlockCubeProps) {
   const blocks = Array.from({ length: count });
-  
-  const bgColors = {
+
+  const bgColors: Record<string, string> = {
     blue: '#4A90D9',
     orange: '#F0883E'
   };
 
-  const bgColor = bgColors[color] || bgColors.blue;
+  const bgColor = bgColors[color] ?? bgColors.blue;
 
   return (
     <div className="grid grid-cols-[repeat(auto-fit,minmax(36px,48px))] max-w-[540px] gap-1.5 p-2">
@@ -20,7 +28,7 @@ export default function BlockCube({ count, color = 'blue', onRemove, animated = 
           <motion.div
             key={i}
             className="w-9 h-9 sm:w-12 sm:h-12 rounded-lg cursor-pointer flex items-center justify-center animate-[breathe_3s_infinite_ease-in-out]"
-            style={{ 
+            style={{
               backgroundColor: bgColor,
               boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.3), 0 4px 6px rgba(0,0,0,0.1)'
             }}
@@ -32,8 +40,8 @@ export default function BlockCube({ count, color = 'blue', onRemove, animated = 
               damping: 10,
               delay: delay + i * 0.06
             }}
-            whileHover={{ y: -4, rotate: randomRot, scale: 1.05, transition: springs?.wobbly || { type: "spring", stiffness: 300 } }}
-            whileTap={{ scale: 0.85, transition: springs?.snappy || { type: "spring", stiffness: 500 } }}
+            whileHover={{ y: -4, rotate: randomRot, scale: 1.05, transition: springs?.wobbly ?? { type: "spring", stiffness: 300 } }}
+            whileTap={{ scale: 0.85, transition: springs?.snappy ?? { type: "spring", stiffness: 500 } }}
             onClick={() => onRemove && onRemove(i)}
           >
             <style>{`

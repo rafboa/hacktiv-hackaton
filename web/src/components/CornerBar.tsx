@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function CornerBar({ playerName = 'Pelajar', currentQuestion = 1, totalQuestions = 10, onMenuAction }) {
+interface CornerBarProps {
+  playerName?: string;
+  currentQuestion?: number;
+  totalQuestions?: number;
+  onMenuAction?: (action: string) => void;
+}
+
+export default function CornerBar({ playerName = 'Pelajar', currentQuestion = 1, totalQuestions = 10, onMenuAction }: CornerBarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -26,7 +33,7 @@ export default function CornerBar({ playerName = 'Pelajar', currentQuestion = 1,
             className="flex flex-col gap-1 items-center justify-center"
           >
             {isOpen ? (
-              <span className="text-2xl leading-none font-light">×</span>
+              <span className="text-2xl leading-none font-light">✕</span>
             ) : (
               <>
                 <span className="w-5 h-[2px] bg-white block"></span>

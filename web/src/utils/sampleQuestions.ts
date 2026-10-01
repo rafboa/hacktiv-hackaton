@@ -1,4 +1,20 @@
-export const sampleQuestions = [
+export type QuestionStep = {
+  action: 'show' | 'add' | 'remove' | 'prompt';
+  count?: number;
+  color?: string;
+  say: string;
+};
+
+export type Question = {
+  type: string;
+  visual: 'blocks' | 'numberline';
+  question: string;
+  steps: QuestionStep[];
+  answer: number;
+  hints: string[];
+};
+
+export const sampleQuestions: Question[] = [
   {
     type: 'math_steps',
     visual: 'blocks',

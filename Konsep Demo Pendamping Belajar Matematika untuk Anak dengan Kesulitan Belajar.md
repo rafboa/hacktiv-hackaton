@@ -175,19 +175,19 @@ TIMING
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │                                                                │
-│                          [🤖 Budi]  / Soal 3 dari 10  (menu) │
+│                  [🤖 Budi]  / Soal 3 dari 10  (menu)           │
 │                                                                │
-│  Posisi:   fixed top-right, z-index 9999                      │
+│  Posisi:   fixed top-right, z-index 9999                       │
 │  Elemen:                                                       │
 │    - Nama anak + avatar emoji (kiri)                           │
-│    - Separator "/" berwarna accent                              │
+│    - Separator "/" berwarna accent                             │
 │    - Progress "Soal X dari Y"                                  │
 │    - Menu pill (tombol hamburger → dropdown)                   │
 │                                                                │
 │  Motion:                                                       │
-│    - Pill hover: scale(1.08) rotate(-2deg) — spring bouncy    │
-│    - Pill click: squish scale(0.9) → bounce scale(1.08)       │
-│    - Menu dropdown: translateY(-8px) → 0, opacity 0 → 1      │
+│    - Pill hover: scale(1.08) rotate(-2deg) — spring bouncy     │
+│    - Pill click: squish scale(0.9) → bounce scale(1.08)        │
+│    - Menu dropdown: translateY(-8px) → 0, opacity 0 → 1        │
 │    - Hamburger → X: rotateZ(45deg) transform per span          │
 │                                                                │
 │  Style:                                                        │

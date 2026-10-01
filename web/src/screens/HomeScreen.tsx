@@ -5,14 +5,29 @@ import JiggleCard from '../components/JiggleCard';
 import useTTS from '../hooks/useTTS';
 import { containerVariants, slideUp } from '../utils/springs';
 
-const modes = [
+interface Mode {
+  id: string;
+  label: string;
+  title: string;
+  icon: string;
+  locked: boolean;
+  color: string;
+}
+
+const modes: Mode[] = [
   { id: 'addition', label: 'Practice 01', title: 'Penjumlahan', icon: '➕', locked: false, color: 'bg-blue-100 text-[#4A90D9]' },
   { id: 'subtraction', label: 'Practice 02', title: 'Pengurangan', icon: '➖', locked: false, color: 'bg-orange-100 text-[#F0883E]' },
   { id: 'word', label: 'Practice 03', title: 'Soal Cerita', icon: '📖', locked: false, color: 'bg-green-100 text-[#34C759]' },
   { id: 'mixed', label: 'Practice 04', title: 'Campuran', icon: '🎯', locked: true, color: 'bg-gray-200 text-gray-500' }
 ];
 
-const HomeScreen = ({ playerName, onSelectMode, onLogout }) => {
+interface HomeScreenProps {
+  playerName: string;
+  onSelectMode: (modeId: string) => void;
+  onLogout: () => void;
+}
+
+const HomeScreen = ({ playerName, onSelectMode, onLogout }: HomeScreenProps) => {
   const { speak, isSupported } = useTTS();
 
   useEffect(() => {
@@ -24,7 +39,7 @@ const HomeScreen = ({ playerName, onSelectMode, onLogout }) => {
   return (
     <div className="min-h-screen bg-[#FDF8F0] flex flex-col">
       <CornerBar playerName={playerName} currentQuestion={0} totalQuestions={0} onMenuAction={(action) => { if (action === 'menu' || action === 'finish') onLogout(); }} />
-      
+
       <main className="flex-1 px-6 py-10 flex flex-col max-w-4xl mx-auto w-full">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -37,7 +52,7 @@ const HomeScreen = ({ playerName, onSelectMode, onLogout }) => {
           <p className="text-xl text-[#888] font-medium">Mau belajar apa hari ini?</p>
         </motion.div>
 
-        <motion.div 
+        <motion.div
           className="grid grid-cols-1 md:grid-cols-2 gap-6"
           variants={containerVariants}
           initial="hidden"
@@ -45,7 +60,7 @@ const HomeScreen = ({ playerName, onSelectMode, onLogout }) => {
         >
           {modes.map((mode) => (
             <motion.div key={mode.id} variants={slideUp}>
-              <JiggleCard 
+              <JiggleCard
                 disabled={mode.locked}
                 onClick={() => !mode.locked && onSelectMode(mode.id)}
                 className={`p-6 rounded-3xl shadow-sm border-4 ${

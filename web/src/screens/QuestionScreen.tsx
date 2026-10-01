@@ -10,40 +10,67 @@ import HintCard from '../components/HintCard';
 import FeedbackOverlay from './FeedbackOverlay';
 import useTTS from '../hooks/useTTS';
 import { bouncy } from '../utils/springs';
+import type { Question } from '../utils/sampleQuestions';
+import type { MascotState } from '../components/Mascot';
+
+type Phase = 'intro' | 'stepping' | 'answering' | 'feedback';
+
+interface QuestionResult {
+  questionIndex: number;
+  correct: boolean;
+  attempts: number;
+  hintsUsed: number;
+}
+
+interface VisibleBlock {
+  count: number;
+  color: string;
+}
+
+interface Jump {
+  start: number;
+  end: number;
+}
+
+interface QuestionScreenProps {
+  playerName: string;
+  questions: Question[];
+  onFinish: (results: QuestionResult[]) => void;
+}
 
 /**
  * QuestionScreen — Core learning screen with step-by-step animation engine
- * 
+ *
  * Phases: intro → stepping → answering → feedback → next
- * 
+ *
  * The step engine iterates through question.steps one at a time:
  * - 'show'/'add' → renders blocks/numberline with stagger, TTS reads step.say
  * - 'remove' → animates blocks disappearing, TTS reads step.say
  * - 'prompt' → shows NumberPad, awaits answer
  */
-const QuestionScreen = ({ playerName, questions, onFinish }) => {
+const QuestionScreen = ({ playerName, questions, onFinish }: QuestionScreenProps) => {
   // ─── State ───
   const [currentIndex, setCurrentIndex] = useState(0);
   const [attempts, setAttempts] = useState(0);
   const [hintLevel, setHintLevel] = useState(0);
   const [showHint, setShowHint] = useState(false);
-  const [mascotState, setMascotState] = useState('idle');
+  const [mascotState, setMascotState] = useState<MascotState>('idle');
   const [showNumberPad, setShowNumberPad] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState(null);
-  const [phase, setPhase] = useState('intro');
+  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [phase, setPhase] = useState<Phase>('intro');
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
-  const [results, setResults] = useState([]);
-  
+  const [results, setResults] = useState<QuestionResult[]>([]);
+
   // Step engine state
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [visibleBlocks, setVisibleBlocks] = useState([]); // {count, color}[]
+  const [visibleBlocks, setVisibleBlocks] = useState<VisibleBlock[]>([]);
   const [removedCount, setRemovedCount] = useState(0);
-  const [numberLineActive, setNumberLineActive] = useState(null);
-  const [numberLineJumps, setNumberLineJumps] = useState([]);
+  const [numberLineActive, setNumberLineActive] = useState<number | null>(null);
+  const [numberLineJumps, setNumberLineJumps] = useState<Jump[]>([]);
   const [speechText, setSpeechText] = useState('');
 
-  const { speak, isSpeaking } = useTTS();
+  const { speak } = useTTS();
   const currentQ = questions[currentIndex];
   const resultsRef = useRef(results);
   resultsRef.current = results;
@@ -68,7 +95,7 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
     if (currentQ) {
       setSpeechText(currentQ.question);
       speak(currentQ.question);
-      
+
       // Move to stepping phase after intro delay
       const timer = setTimeout(() => {
         setPhase('stepping');
@@ -86,36 +113,36 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
     if (currentStepIndex >= steps.length) return;
 
     const step = steps[currentStepIndex];
-    
+
     const timer = setTimeout(() => {
       // Execute current step
       if (step.action === 'show') {
         if (currentQ.visual === 'numberline') {
-          setNumberLineActive(step.count);
+          setNumberLineActive(step.count ?? null);
         } else {
-          setVisibleBlocks(prev => [...prev, { count: step.count, color: step.color || 'blue' }]);
+          setVisibleBlocks(prev => [...prev, { count: step.count ?? 0, color: step.color ?? 'blue' }]);
         }
         setSpeechText(step.say);
         speak(step.say);
-      } 
+      }
       else if (step.action === 'add') {
         if (currentQ.visual === 'numberline') {
-          const prevNum = numberLineActive || 0;
-          setNumberLineJumps(prev => [...prev, { start: prevNum, end: prevNum + step.count }]);
-          setNumberLineActive(prevNum + step.count);
+          const prevNum = numberLineActive ?? 0;
+          setNumberLineJumps(prev => [...prev, { start: prevNum, end: prevNum + (step.count ?? 0) }]);
+          setNumberLineActive(prevNum + (step.count ?? 0));
         } else {
-          setVisibleBlocks(prev => [...prev, { count: step.count, color: step.color || 'orange' }]);
+          setVisibleBlocks(prev => [...prev, { count: step.count ?? 0, color: step.color ?? 'orange' }]);
         }
         setSpeechText(step.say);
         speak(step.say);
       }
       else if (step.action === 'remove') {
         if (currentQ.visual === 'numberline') {
-          const prevNum = numberLineActive || 0;
-          setNumberLineJumps(prev => [...prev, { start: prevNum, end: prevNum - step.count }]);
-          setNumberLineActive(prevNum - step.count);
+          const prevNum = numberLineActive ?? 0;
+          setNumberLineJumps(prev => [...prev, { start: prevNum, end: prevNum - (step.count ?? 0) }]);
+          setNumberLineActive(prevNum - (step.count ?? 0));
         } else {
-          setRemovedCount(step.count);
+          setRemovedCount(step.count ?? 0);
         }
         setSpeechText(step.say);
         speak(step.say);
@@ -137,7 +164,7 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
   }, [phase, currentStepIndex, currentQ]);
 
   // ─── Answer Handler ───
-  const handleAnswerSelect = useCallback((num) => {
+  const handleAnswerSelect = useCallback((num: number) => {
     if (phase !== 'answering') return;
     setSelectedAnswer(num);
 
@@ -146,11 +173,11 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
 
     if (correct) {
       setMascotState('happy');
-      const newResults = [...resultsRef.current, { 
-        questionIndex: currentIndex, 
-        correct: true, 
-        attempts: attempts + 1, 
-        hintsUsed: hintLevel 
+      const newResults: QuestionResult[] = [...resultsRef.current, {
+        questionIndex: currentIndex,
+        correct: true,
+        attempts: attempts + 1,
+        hintsUsed: hintLevel
       }];
       setResults(newResults);
       setShowFeedback(true);
@@ -172,11 +199,11 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
 
       if (newAttempts >= 3) {
         // Show answer after 3 wrong attempts
-        const newResults = [...resultsRef.current, { 
-          questionIndex: currentIndex, 
-          correct: false, 
-          attempts: newAttempts, 
-          hintsUsed: 3 
+        const newResults: QuestionResult[] = [...resultsRef.current, {
+          questionIndex: currentIndex,
+          correct: false,
+          attempts: newAttempts,
+          hintsUsed: 3
         }];
         setResults(newResults);
         setShowFeedback(true);
@@ -194,7 +221,7 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
         // Show hint and allow retry
         setHintLevel(newAttempts);
         setShowHint(true);
-        
+
         setTimeout(() => {
           setPhase('answering');
           setMascotState('thinking');
@@ -205,7 +232,6 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
   }, [phase, currentQ, currentIndex, attempts, hintLevel, questions.length, onFinish]);
 
   // ─── Derived values ───
-  const totalBlockCount = visibleBlocks.reduce((sum, b) => sum + b.count, 0) - removedCount;
   const equation = currentQ ? currentQ.question.replace(' = ?', ` = ${currentQ.answer}`) : '';
 
   if (!currentQ) return null;
@@ -213,7 +239,7 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
   return (
     <div className="min-h-screen bg-[#FDF8F0] flex flex-col relative overflow-hidden">
       {/* Progress bar */}
-      <motion.div 
+      <motion.div
         className="fixed top-0 left-0 h-[4px] bg-[#C8FF00] z-50"
         initial={{ width: 0 }}
         animate={{ width: `${((currentIndex + 1) / questions.length) * 100}%` }}
@@ -221,11 +247,11 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
       />
 
       {/* Corner bar */}
-      <CornerBar 
-        playerName={playerName} 
-        currentQuestion={currentIndex + 1} 
-        totalQuestions={questions.length} 
-        onMenuAction={() => {}} 
+      <CornerBar
+        playerName={playerName}
+        currentQuestion={currentIndex + 1}
+        totalQuestions={questions.length}
+        onMenuAction={() => {}}
       />
 
       {/* Main content */}
@@ -240,17 +266,17 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
             className="w-full flex flex-col items-center gap-6"
           >
             {/* Speech bubble */}
-            <SpeechBubble 
-              text={speechText || currentQ.question} 
+            <SpeechBubble
+              text={speechText || currentQ.question}
               isActive={phase === 'intro' || phase === 'stepping'}
-              onReplay={() => speak(speechText || currentQ.question)} 
+              onReplay={() => speak(speechText || currentQ.question)}
             />
-            
+
             {/* Visual area */}
             <div className="min-h-[160px] flex items-center justify-center w-full">
               {currentQ.visual === 'numberline' ? (
-                <NumberLine 
-                  from={0} 
+                <NumberLine
+                  from={0}
                   to={20}
                   activeNumber={numberLineActive}
                   jumps={numberLineJumps}
@@ -265,14 +291,14 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ ...bouncy, delay: idx * 0.2 }}
                     >
-                      <BlockCube 
-                        count={idx === visibleBlocks.length - 1 && removedCount > 0 
-                          ? Math.max(0, block.count - removedCount) 
+                      <BlockCube
+                        count={idx === visibleBlocks.length - 1 && removedCount > 0
+                          ? Math.max(0, block.count - removedCount)
                           : block.count
-                        } 
-                        color={block.color} 
+                        }
+                        color={block.color}
                         animated={true}
-                        delay={idx * 0.3} 
+                        delay={idx * 0.3}
                       />
                     </motion.div>
                   ))}
@@ -288,18 +314,18 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
             {/* Number pad */}
             <AnimatePresence>
               {showNumberPad && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 30 }} 
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 30 }}
                   transition={bouncy}
                   className="w-full"
                 >
-                  <NumberPad 
-                    onSelect={handleAnswerSelect} 
-                    selectedNumber={selectedAnswer} 
-                    disabled={phase !== 'answering'} 
-                    max={20} 
+                  <NumberPad
+                    onSelect={handleAnswerSelect}
+                    selectedNumber={selectedAnswer}
+                    disabled={phase !== 'answering'}
+                    max={20}
                   />
                 </motion.div>
               )}
@@ -322,10 +348,10 @@ const QuestionScreen = ({ playerName, questions, onFinish }) => {
             exit={{ opacity: 0, y: 50 }}
             className="fixed bottom-28 left-4 right-4 z-30 max-w-lg mx-auto"
           >
-            <HintCard 
-              level={hintLevel} 
-              text={currentQ.hints?.[hintLevel - 1] || 'Coba lagi!'} 
-              onDismiss={() => setShowHint(false)} 
+            <HintCard
+              level={hintLevel}
+              text={currentQ.hints?.[hintLevel - 1] ?? 'Coba lagi!'}
+              onDismiss={() => setShowHint(false)}
             />
           </motion.div>
         )}

@@ -1,6 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 
-export const useTTS = () => {
+interface UseTTSReturn {
+  speak: (text: string) => void;
+  stop: () => void;
+  isSpeaking: boolean;
+  isSupported: boolean;
+}
+
+export const useTTS = (): UseTTSReturn => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
 
@@ -10,11 +17,11 @@ export const useTTS = () => {
     }
   }, []);
 
-  const speak = useCallback((text) => {
+  const speak = useCallback((text: string) => {
     if (!isSupported) return;
-    
+
     window.speechSynthesis.cancel();
-    
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'id-ID';
     utterance.rate = 0.9;
