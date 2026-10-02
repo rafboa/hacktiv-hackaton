@@ -1,0 +1,367 @@
+{
+  "name": "arith-teaching-planner",
+  "description": "Arith Langflow flow — single endpoint for PROBLEM_REQUESTED, SUPPORT_REQUESTED, TRANSFER_REQUESTED. Spec: Langflow-Architecture-Arith.md",
+  "data": {
+    "nodes": [
+      {
+        "id": "chat_input",
+        "type": "ChatInput",
+        "display_name": "Chat Input",
+        "template": {
+          "input_value": { "value": "" },
+          "store_message": { "value": false }
+        },
+        "position": { "x": 60, "y": 300 }
+      },
+      {
+        "id": "request_gateway",
+        "type": "CustomComponent",
+        "display_name": "Arith Request Gateway",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_request_gateway.py"
+          }
+        },
+        "position": { "x": 320, "y": 300 }
+      },
+      {
+        "id": "lesson_engine_initial",
+        "type": "CustomComponent",
+        "display_name": "Arith Lesson Engine — Initial",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_lesson_engine.py"
+          },
+          "mode": { "value": "INITIAL" },
+          "demo_seed": { "value": "ON" }
+        },
+        "position": { "x": 600, "y": 120 }
+      },
+      {
+        "id": "lesson_engine_transfer",
+        "type": "CustomComponent",
+        "display_name": "Arith Lesson Engine — Transfer",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_lesson_engine.py"
+          },
+          "mode": { "value": "TRANSFER" },
+          "demo_seed": { "value": "ON" }
+        },
+        "position": { "x": 600, "y": 480 }
+      },
+      {
+        "id": "lesson_engine_fallback",
+        "type": "CustomComponent",
+        "display_name": "Arith Lesson Engine — Fallback",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_lesson_engine.py"
+          },
+          "mode": { "value": "FALLBACK" },
+          "demo_seed": { "value": "ON" }
+        },
+        "position": { "x": 1380, "y": 680 }
+      },
+      {
+        "id": "strategy_catalog",
+        "type": "CustomComponent",
+        "display_name": "Teaching Strategy Catalog",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/teaching_strategy_catalog.py"
+          }
+        },
+        "position": { "x": 600, "y": 300 }
+      },
+      {
+        "id": "support_context_builder",
+        "type": "CustomComponent",
+        "display_name": "Support Context Builder",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/support_context_builder.py"
+          },
+          "mode": { "value": "SUPPORT" }
+        },
+        "position": { "x": 860, "y": 300 }
+      },
+      {
+        "id": "deepseek_lm",
+        "type": "DeepSeekModel",
+        "display_name": "DeepSeek",
+        "template": {
+          "model_name": { "value": "deepseek-chat" },
+          "temperature": { "value": 0.2 },
+          "max_tokens": { "value": 1600 },
+          "seed": { "value": 42 },
+          "api_key": { "value": "" }
+        },
+        "position": { "x": 860, "y": 120 }
+      },
+      {
+        "id": "teaching_planner_agent",
+        "type": "Agent",
+        "display_name": "Teaching Planner Agent",
+        "template": {
+          "agent_llm": {},
+          "chat_history_messages": { "value": 0 },
+          "current_date_tool": { "value": false },
+          "calculator_tool": { "value": false },
+          "handle_parsing_errors": { "value": true },
+          "verbose": { "value": true },
+          "tools": { "value": [] },
+          "output_schema": {
+            "value": [
+              { "name": "hypothesis_code",      "type": "str",  "as_list": false },
+              { "name": "confidence",            "type": "str",  "as_list": false },
+              { "name": "evidence_summary",      "type": "str",  "as_list": false },
+              { "name": "strategy_code",         "type": "str",  "as_list": false },
+              { "name": "support_level",         "type": "int",  "as_list": false },
+              { "name": "plan",                  "type": "dict", "as_list": false },
+              { "name": "learning_state_patch",  "type": "dict", "as_list": false }
+            ]
+          },
+          "system_prompt": {
+            "value": "You are a teaching planner, not a calculator and not a diagnostic tool.\nTreat problem and correct_answer as immutable facts you cannot change.\nBuild a hypothesis only from evidence in the current attempt.\nIf evidence is insufficient use hypothesis_code=UNKNOWN and a general strategy.\nChoose exactly one strategy from the strategy_candidates list provided.\nUse only actions from the chosen strategy's allowed_actions that are also in supported_actions.\nMaximum 12 steps; one primary instruction per step.\nEnd the support plan with exactly one guided question.\nNever request voice input as the only available option.\nNever use diagnostic labels or shaming language.\nOutput Structured Response only — no additional prose."
+          }
+        },
+        "position": { "x": 1120, "y": 300 }
+      },
+      {
+        "id": "plan_guard_pass1",
+        "type": "CustomComponent",
+        "display_name": "Plan Guard + Assembler (pass-1)",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_plan_guard.py"
+          }
+        },
+        "position": { "x": 1380, "y": 300 }
+      },
+      {
+        "id": "repair_context_builder",
+        "type": "CustomComponent",
+        "display_name": "Repair Context Builder",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/support_context_builder.py"
+          },
+          "mode": { "value": "REPAIR" }
+        },
+        "position": { "x": 1380, "y": 480 }
+      },
+      {
+        "id": "repair_planner_agent",
+        "type": "Agent",
+        "display_name": "Repair Planner Agent",
+        "template": {
+          "agent_llm": {},
+          "chat_history_messages": { "value": 0 },
+          "current_date_tool": { "value": false },
+          "calculator_tool": { "value": false },
+          "handle_parsing_errors": { "value": true },
+          "verbose": { "value": true },
+          "tools": { "value": [] },
+          "output_schema": {
+            "value": [
+              { "name": "hypothesis_code",      "type": "str",  "as_list": false },
+              { "name": "confidence",            "type": "str",  "as_list": false },
+              { "name": "evidence_summary",      "type": "str",  "as_list": false },
+              { "name": "strategy_code",         "type": "str",  "as_list": false },
+              { "name": "support_level",         "type": "int",  "as_list": false },
+              { "name": "plan",                  "type": "dict", "as_list": false },
+              { "name": "learning_state_patch",  "type": "dict", "as_list": false }
+            ]
+          },
+          "system_prompt": {
+            "value": "You are repairing a failed teaching plan. Fix ONLY the issues listed in repair_context.validation_errors. Do not change problem, operands, or correct_answer. Do not change hypothesis_code unless the error explicitly states it is unsupported. Output Structured Response only."
+          }
+        },
+        "position": { "x": 1640, "y": 480 }
+      },
+      {
+        "id": "plan_guard_pass2",
+        "type": "CustomComponent",
+        "display_name": "Plan Guard + Assembler (pass-2)",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_plan_guard.py"
+          }
+        },
+        "position": { "x": 1900, "y": 480 }
+      },
+      {
+        "id": "plan_guard_problem",
+        "type": "CustomComponent",
+        "display_name": "Plan Guard (Problem)",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_plan_guard.py"
+          }
+        },
+        "position": { "x": 860, "y": 120 }
+      },
+      {
+        "id": "plan_guard_transfer",
+        "type": "CustomComponent",
+        "display_name": "Plan Guard (Transfer)",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_plan_guard.py"
+          }
+        },
+        "position": { "x": 860, "y": 480 }
+      },
+      {
+        "id": "serializer_problem",
+        "type": "CustomComponent",
+        "display_name": "Problem Response Serializer",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_response_serializer.py"
+          },
+          "response_type": { "value": "PROBLEM_PLAN" }
+        },
+        "position": { "x": 1120, "y": 120 }
+      },
+      {
+        "id": "serializer_support",
+        "type": "CustomComponent",
+        "display_name": "Support Response Serializer",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_response_serializer.py"
+          },
+          "response_type": { "value": "SUPPORT_PLAN_AI" }
+        },
+        "position": { "x": 1640, "y": 300 }
+      },
+      {
+        "id": "serializer_transfer",
+        "type": "CustomComponent",
+        "display_name": "Transfer Response Serializer",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_response_serializer.py"
+          },
+          "response_type": { "value": "TRANSFER_PLAN" }
+        },
+        "position": { "x": 1120, "y": 480 }
+      },
+      {
+        "id": "serializer_fallback",
+        "type": "CustomComponent",
+        "display_name": "Fallback Response Serializer",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_response_serializer.py"
+          },
+          "response_type": { "value": "SUPPORT_PLAN_FALLBACK" }
+        },
+        "position": { "x": 1640, "y": 680 }
+      },
+      {
+        "id": "serializer_error",
+        "type": "CustomComponent",
+        "display_name": "Error Response Serializer",
+        "template": {
+          "code": {
+            "value": "# paste content of langflow/components/arith_response_serializer.py"
+          },
+          "response_type": { "value": "ERROR" }
+        },
+        "position": { "x": 600, "y": 680 }
+      },
+      {
+        "id": "chat_output_problem",
+        "type": "ChatOutput",
+        "display_name": "Chat Output (Problem)",
+        "template": { "store_message": { "value": false } },
+        "position": { "x": 1380, "y": 120 }
+      },
+      {
+        "id": "chat_output_support",
+        "type": "ChatOutput",
+        "display_name": "Chat Output (Support)",
+        "template": { "store_message": { "value": false } },
+        "position": { "x": 1900, "y": 300 }
+      },
+      {
+        "id": "chat_output_transfer",
+        "type": "ChatOutput",
+        "display_name": "Chat Output (Transfer)",
+        "template": { "store_message": { "value": false } },
+        "position": { "x": 1380, "y": 480 }
+      },
+      {
+        "id": "chat_output_fallback",
+        "type": "ChatOutput",
+        "display_name": "Chat Output (Fallback)",
+        "template": { "store_message": { "value": false } },
+        "position": { "x": 1900, "y": 680 }
+      },
+      {
+        "id": "chat_output_error",
+        "type": "ChatOutput",
+        "display_name": "Chat Output (Error)",
+        "template": { "store_message": { "value": false } },
+        "position": { "x": 860, "y": 680 }
+      }
+    ],
+    "edges": [
+      { "source": "chat_input",            "sourceHandle": "message",        "target": "request_gateway",       "targetHandle": "raw_input" },
+
+      { "source": "request_gateway",       "sourceHandle": "problem_out",    "target": "lesson_engine_initial", "targetHandle": "request_data" },
+      { "source": "request_gateway",       "sourceHandle": "support_out",    "target": "strategy_catalog",      "targetHandle": "request_data" },
+      { "source": "request_gateway",       "sourceHandle": "support_out",    "target": "support_context_builder","targetHandle": "request_data" },
+      { "source": "request_gateway",       "sourceHandle": "transfer_out",   "target": "lesson_engine_transfer","targetHandle": "request_data" },
+      { "source": "request_gateway",       "sourceHandle": "invalid_out",    "target": "serializer_error",      "targetHandle": "plan_data" },
+
+      { "source": "lesson_engine_initial", "sourceHandle": "plan_out",       "target": "plan_guard_problem",    "targetHandle": "canonical_data" },
+      { "source": "lesson_engine_initial", "sourceHandle": "plan_out",       "target": "plan_guard_problem",    "targetHandle": "agent_response" },
+
+      { "source": "lesson_engine_transfer","sourceHandle": "plan_out",       "target": "plan_guard_transfer",   "targetHandle": "canonical_data" },
+      { "source": "lesson_engine_transfer","sourceHandle": "plan_out",       "target": "plan_guard_transfer",   "targetHandle": "agent_response" },
+
+      { "source": "strategy_catalog",      "sourceHandle": "strategies_out", "target": "support_context_builder","targetHandle": "catalog_data" },
+      { "source": "strategy_catalog",      "sourceHandle": "strategies_out", "target": "plan_guard_pass1",      "targetHandle": "catalog_data" },
+
+      { "source": "deepseek_lm",           "sourceHandle": "language_model", "target": "teaching_planner_agent","targetHandle": "agent_llm" },
+      { "source": "deepseek_lm",           "sourceHandle": "language_model", "target": "repair_planner_agent",  "targetHandle": "agent_llm" },
+
+      { "source": "support_context_builder","sourceHandle":"context_out",    "target": "teaching_planner_agent","targetHandle": "input_value" },
+
+      { "source": "teaching_planner_agent","sourceHandle": "structured_response","target": "plan_guard_pass1",  "targetHandle": "agent_response" },
+      { "source": "request_gateway",       "sourceHandle": "support_out",    "target": "plan_guard_pass1",      "targetHandle": "canonical_data" },
+
+      { "source": "plan_guard_pass1",      "sourceHandle": "valid_plan",     "target": "serializer_support",    "targetHandle": "plan_data" },
+      { "source": "plan_guard_pass1",      "sourceHandle": "invalid_plan",   "target": "repair_context_builder","targetHandle": "failed_plan_data" },
+
+      { "source": "request_gateway",       "sourceHandle": "support_out",    "target": "repair_context_builder","targetHandle": "request_data" },
+      { "source": "strategy_catalog",      "sourceHandle": "strategies_out", "target": "repair_context_builder","targetHandle": "catalog_data" },
+      { "source": "repair_context_builder","sourceHandle": "context_out",    "target": "repair_planner_agent",  "targetHandle": "input_value" },
+
+      { "source": "repair_planner_agent",  "sourceHandle": "structured_response","target": "plan_guard_pass2",  "targetHandle": "agent_response" },
+      { "source": "request_gateway",       "sourceHandle": "support_out",    "target": "plan_guard_pass2",      "targetHandle": "canonical_data" },
+      { "source": "strategy_catalog",      "sourceHandle": "strategies_out", "target": "plan_guard_pass2",      "targetHandle": "catalog_data" },
+
+      { "source": "plan_guard_pass2",      "sourceHandle": "valid_plan",     "target": "serializer_support",    "targetHandle": "plan_data" },
+      { "source": "plan_guard_pass2",      "sourceHandle": "invalid_plan",   "target": "lesson_engine_fallback","targetHandle": "request_data" },
+
+      { "source": "plan_guard_problem",    "sourceHandle": "valid_plan",     "target": "serializer_problem",    "targetHandle": "plan_data" },
+      { "source": "plan_guard_problem",    "sourceHandle": "invalid_plan",   "target": "lesson_engine_fallback","targetHandle": "request_data" },
+
+      { "source": "plan_guard_transfer",   "sourceHandle": "valid_plan",     "target": "serializer_transfer",   "targetHandle": "plan_data" },
+      { "source": "plan_guard_transfer",   "sourceHandle": "invalid_plan",   "target": "lesson_engine_fallback","targetHandle": "request_data" },
+
+      { "source": "lesson_engine_fallback","sourceHandle": "plan_out",       "target": "serializer_fallback",   "targetHandle": "plan_data" },
+
+      { "source": "serializer_problem",    "sourceHandle": "message_out",    "target": "chat_output_problem",   "targetHandle": "input_value" },
+      { "source": "serializer_support",    "sourceHandle": "message_out",    "target": "chat_output_support",   "targetHandle": "input_value" },
+      { "source": "serializer_transfer",   "sourceHandle": "message_out",    "target": "chat_output_transfer",  "targetHandle": "input_value" },
+      { "source": "serializer_fallback",   "sourceHandle": "message_out",    "target": "chat_output_fallback",  "targetHandle": "input_value" },
+      { "source": "serializer_error",      "sourceHandle": "message_out",    "target": "chat_output_error",     "targetHandle": "input_value" }
+    ]
+  }
+}

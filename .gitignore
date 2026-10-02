@@ -29,6 +29,7 @@ node_modules/
 .bob/
 mcp-server/build/
 build/
+langflow/flow/import_flow.py
 
 # Logs
 logs
@@ -39,3 +40,6 @@ yarn-error.log*
 
 # TypeScript
 *.tsbuildinfo
+
+# .md files that are unimportant for it to be published
+Langflow-Architecture-Arith.md
