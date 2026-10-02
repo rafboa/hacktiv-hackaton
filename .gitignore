@@ -24,3 +24,18 @@ ENV/
 
 # Node
 node_modules/
+
+# IBM Bob & MCP Server
+.bob/
+mcp-server/build/
+build/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript
+*.tsbuildinfo
