@@ -2,7 +2,10 @@
 TeachingStrategyCatalog — Custom Langflow component
 Role : Return valid teaching strategies for a given concept, hypothesis, and support level.
        Deterministic — no LLM involved. Called before Teaching Planner Agent.
-Spec : Langflow-Architecture-Arith.md §8, §5 (node 7)
+Spec : contracts/arith-json-contract-v1.md §12, §14
+
+Action names follow contract §14 exactly (v1 names).
+Strategies are filtered against client_capabilities.supported_actions if provided.
 
 Output JSON shape:
 {
@@ -23,33 +26,48 @@ from langflow.schema import Data
 
 
 # ---------------------------------------------------------------------------
-# Catalog definition
-# Key: (concept, hypothesis_code, support_level) → list of strategy entries
-# Hypothesis codes and strategy codes follow contracts/arith-json-contract-v1.md
+# Common action sets — v1 action names only (contract §14)
 # ---------------------------------------------------------------------------
 
-# Common action sets
-_COMMON_SPEAK = ["SPEAK", "ASK_QUESTION"]
+_COMMON_NARRATION = ["SPEAK", "SHOW_FEEDBACK"]
+_TERMINAL = ["ASK_QUESTION"]
+
 _NUMBER_LINE_ACTIONS = [
     "CLEAR_STAGE",
     "SHOW_NUMBER_LINE",
     "PLACE_MARKER",
     "MOVE_MARKER",
-    *_COMMON_SPEAK,
+    "SHOW_EQUATION",
+    "HIGHLIGHT",
+    *_COMMON_NARRATION,
+    *_TERMINAL,
 ]
+
 _BLOCK_ACTIONS = [
     "CLEAR_STAGE",
-    "SHOW_BLOCKS",
-    "SPLIT_BLOCK",
-    "MERGE_BLOCKS",
-    *_COMMON_SPEAK,
+    "SHOW_OBJECTS",
+    "ADD_OBJECTS",
+    "REMOVE_OBJECTS",
+    "MOVE_OBJECTS",
+    "GROUP_TO_TEN",
+    "SHOW_EQUATION",
+    *_COMMON_NARRATION,
+    *_TERMINAL,
 ]
-_TEN_FRAME_ACTIONS = [
+
+_SYMBOLIC_ACTIONS = [
     "CLEAR_STAGE",
-    "SHOW_TEN_FRAME",
-    "FILL_TEN_FRAME",
-    *_COMMON_SPEAK,
+    "SHOW_EQUATION",
+    "HIGHLIGHT",
+    *_COMMON_NARRATION,
+    *_TERMINAL,
 ]
+
+# ---------------------------------------------------------------------------
+# Catalog definition
+# Key: (concept, hypothesis_code, support_level) → list of strategy entries
+# Hypothesis codes follow contract §12.
+# ---------------------------------------------------------------------------
 
 CATALOG: dict[tuple, list[dict]] = {
     # ---- ADDITION_CROSSING_TEN, support level 1 -------------------------
@@ -61,11 +79,23 @@ CATALOG: dict[tuple, list[dict]] = {
         },
         {
             "strategy_code": "HIGHLIGHT_EQUATION",
-            "allowed_actions": ["HIGHLIGHT_OPERANDS", *_COMMON_SPEAK],
+            "allowed_actions": _SYMBOLIC_ACTIONS,
             "constraints": {},
         },
     ],
-    ("ADDITION_CROSSING_TEN", "FORGOT_TO_CROSS_TEN", 1): [
+    ("ADDITION_CROSSING_TEN", "OPERATION_CONFUSION", 1): [
+        {
+            "strategy_code": "COMBINE_BLOCK_GROUPS",
+            "allowed_actions": _BLOCK_ACTIONS,
+            "constraints": {"show_each_group": True},
+        },
+        {
+            "strategy_code": "NUMBER_LINE_COUNT_ON",
+            "allowed_actions": _NUMBER_LINE_ACTIONS,
+            "constraints": {"step_size": 1, "show_each_jump": True, "max_steps": 8},
+        },
+    ],
+    ("ADDITION_CROSSING_TEN", "CROSSING_TEN_DIFFICULTY", 1): [
         {
             "strategy_code": "NUMBER_LINE_COUNT_ON",
             "allowed_actions": _NUMBER_LINE_ACTIONS,
@@ -82,9 +112,9 @@ CATALOG: dict[tuple, list[dict]] = {
     # ---- ADDITION_CROSSING_TEN, support level 2 -------------------------
     ("ADDITION_CROSSING_TEN", "COUNTED_START_AS_FIRST_STEP", 2): [
         {
-            "strategy_code": "MAKE_TEN_STRATEGY",
-            "allowed_actions": _TEN_FRAME_ACTIONS,
-            "constraints": {"show_decomposition": True},
+            "strategy_code": "MAKE_TEN_WITH_BLOCKS",
+            "allowed_actions": _BLOCK_ACTIONS,
+            "constraints": {"show_decomposition": True, "target_ten": True},
         },
         {
             "strategy_code": "NUMBER_LINE_COUNT_ON",
@@ -92,40 +122,59 @@ CATALOG: dict[tuple, list[dict]] = {
             "constraints": {"step_size": 1, "show_each_jump": True, "max_steps": 6},
         },
     ],
-    ("ADDITION_CROSSING_TEN", "FORGOT_TO_CROSS_TEN", 2): [
+    ("ADDITION_CROSSING_TEN", "OPERATION_CONFUSION", 2): [
         {
-            "strategy_code": "MAKE_TEN_STRATEGY",
-            "allowed_actions": _TEN_FRAME_ACTIONS,
-            "constraints": {"show_decomposition": True},
+            "strategy_code": "MAKE_TEN_WITH_BLOCKS",
+            "allowed_actions": _BLOCK_ACTIONS,
+            "constraints": {"show_decomposition": True, "target_ten": True},
+        },
+    ],
+    ("ADDITION_CROSSING_TEN", "CROSSING_TEN_DIFFICULTY", 2): [
+        {
+            "strategy_code": "MAKE_TEN_WITH_BLOCKS",
+            "allowed_actions": _BLOCK_ACTIONS,
+            "constraints": {"show_decomposition": True, "target_ten": True},
+        },
+        {
+            "strategy_code": "NUMBER_LINE_COUNT_ON",
+            "allowed_actions": _NUMBER_LINE_ACTIONS,
+            "constraints": {"step_size": 1, "show_each_jump": True, "max_steps": 6},
         },
     ],
     ("ADDITION_CROSSING_TEN", "UNKNOWN", 2): [
         {
-            "strategy_code": "MAKE_TEN_STRATEGY",
-            "allowed_actions": _TEN_FRAME_ACTIONS,
-            "constraints": {"show_decomposition": True},
+            "strategy_code": "MAKE_TEN_WITH_BLOCKS",
+            "allowed_actions": _BLOCK_ACTIONS,
+            "constraints": {"show_decomposition": True, "target_ten": True},
         },
     ],
     # ---- ADDITION_CROSSING_TEN, support level 3 -------------------------
     ("ADDITION_CROSSING_TEN", "COUNTED_START_AS_FIRST_STEP", 3): [
         {
-            "strategy_code": "CONCRETE_BLOCKS_FULL_DEMO",
+            "strategy_code": "CONCRETE_TO_VISUAL",
             "allowed_actions": _BLOCK_ACTIONS,
-            "constraints": {"full_demo": True, "show_simpler_problem": True},
+            "constraints": {"full_demo": True},
         },
     ],
-    ("ADDITION_CROSSING_TEN", "FORGOT_TO_CROSS_TEN", 3): [
+    ("ADDITION_CROSSING_TEN", "OPERATION_CONFUSION", 3): [
         {
-            "strategy_code": "CONCRETE_BLOCKS_FULL_DEMO",
+            "strategy_code": "CONCRETE_TO_VISUAL",
             "allowed_actions": _BLOCK_ACTIONS,
-            "constraints": {"full_demo": True, "show_simpler_problem": True},
+            "constraints": {"full_demo": True},
+        },
+    ],
+    ("ADDITION_CROSSING_TEN", "CROSSING_TEN_DIFFICULTY", 3): [
+        {
+            "strategy_code": "CONCRETE_TO_VISUAL",
+            "allowed_actions": _BLOCK_ACTIONS,
+            "constraints": {"full_demo": True},
         },
     ],
     ("ADDITION_CROSSING_TEN", "UNKNOWN", 3): [
         {
-            "strategy_code": "CONCRETE_BLOCKS_FULL_DEMO",
+            "strategy_code": "CONCRETE_TO_VISUAL",
             "allowed_actions": _BLOCK_ACTIONS,
-            "constraints": {"full_demo": True, "show_simpler_problem": True},
+            "constraints": {"full_demo": True},
         },
     ],
 }
@@ -141,16 +190,16 @@ _DEFAULT_STRATEGIES: dict[int, list[dict]] = {
     ],
     2: [
         {
-            "strategy_code": "MAKE_TEN_STRATEGY",
-            "allowed_actions": _TEN_FRAME_ACTIONS,
-            "constraints": {"show_decomposition": True},
+            "strategy_code": "MAKE_TEN_WITH_BLOCKS",
+            "allowed_actions": _BLOCK_ACTIONS,
+            "constraints": {"show_decomposition": True, "target_ten": True},
         }
     ],
     3: [
         {
-            "strategy_code": "CONCRETE_BLOCKS_FULL_DEMO",
+            "strategy_code": "CONCRETE_TO_VISUAL",
             "allowed_actions": _BLOCK_ACTIONS,
-            "constraints": {"full_demo": True, "show_simpler_problem": True},
+            "constraints": {"full_demo": True},
         }
     ],
 }
@@ -160,7 +209,7 @@ class TeachingStrategyCatalog(Component):
     display_name = "Teaching Strategy Catalog"
     description = (
         "Deterministic catalog node. Returns valid teaching strategies based on "
-        "concept, hypothesis, and support level. Called before the Teaching Planner Agent."
+        "concept, hypothesis, and support level. Filters by client_capabilities.supported_actions."
     )
     icon = "book-open"
 
@@ -168,7 +217,7 @@ class TeachingStrategyCatalog(Component):
         DataInput(
             name="request_data",
             display_name="Request Data",
-            info="Clean request from Gateway. Must contain concept, hypothesis_code, support_level.",
+            info="Clean request from Gateway. Must contain concept, hypothesis_code, support_level, supported_actions.",
         ),
     ]
 
@@ -185,6 +234,9 @@ class TeachingStrategyCatalog(Component):
         support_level = int(req.get("support_level", 1))
         support_level = max(1, min(3, support_level))
 
+        # Client capability filter
+        supported_actions: set[str] = set(req.get("supported_actions", []))
+
         key = (concept, hypothesis_code, support_level)
         strategies = CATALOG.get(key)
 
@@ -192,6 +244,39 @@ class TeachingStrategyCatalog(Component):
             # Try with UNKNOWN hypothesis for this concept + level
             fallback_key = (concept, "UNKNOWN", support_level)
             strategies = CATALOG.get(fallback_key, _DEFAULT_STRATEGIES.get(support_level, []))
+
+        # Filter strategies by client capabilities — remove any strategy whose
+        # required actions are not all in supported_actions.
+        # If no strategy survives, offer a terminal-only generic strategy when
+        # the client can collect an answer. Never advertise a visual action that
+        # the client did not declare.
+        if supported_actions:
+            filtered = [
+                s for s in strategies
+                if all(a in supported_actions for a in s["allowed_actions"])
+            ]
+            if filtered:
+                strategies = filtered
+            else:
+                terminal = next(
+                    (a for a in ("ASK_QUESTION", "ASK_REASONING") if a in supported_actions),
+                    None,
+                )
+                if terminal is None:
+                    strategies = []
+                else:
+                    minimal_actions = [
+                        action for action in (
+                            "CLEAR_STAGE", "SHOW_TEXT", "SPEAK", "SHOW_EQUATION",
+                            "SHOW_FEEDBACK", terminal,
+                        )
+                        if action in supported_actions
+                    ]
+                    strategies = [{
+                        "strategy_code": "GENERAL_GUIDED",
+                        "allowed_actions": minimal_actions,
+                        "constraints": {"visuals": "optional", "max_steps": 4},
+                    }]
 
         result = {
             "allowed_strategies": strategies,

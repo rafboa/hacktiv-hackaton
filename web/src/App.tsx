@@ -1,5 +1,5 @@
-import { useState, useCallback, useRef } from 'react'
-import { AnimatePresence, motion } from 'framer-motion'
+import { useState, useCallback } from 'react'
+import { AnimatePresence, motion, type Variants } from 'framer-motion'
 import './App.css'
 
 // Screens
@@ -20,6 +20,7 @@ interface QuestionResult {
   correct: boolean;
   attempts: number;
   hintsUsed: number;
+  problemKind: 'REGULAR' | 'TRANSFER';
 }
 
 /**
@@ -32,7 +33,7 @@ interface QuestionResult {
  */
 
 // Screen transition variants
-const screenVariants = {
+const screenVariants: Variants = {
   initial: { opacity: 0, scale: 0.97 },
   animate: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] } },
   exit: { opacity: 0, scale: 1.02, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] } },
@@ -86,25 +87,6 @@ function App() {
   const handleGoHome = useCallback(() => {
     setResults([])
     setScreen('home')
-  }, [])
-
-  // Corner bar menu action handler (shared across screens)
-  const handleMenuAction = useCallback((action: string) => {
-    switch (action) {
-      case 'home':
-        setResults([])
-        setScreen('home')
-        break
-      case 'restart':
-        setResults([])
-        setScreen('question')
-        break
-      case 'finish':
-        setScreen('summary')
-        break
-      default:
-        break
-    }
   }, [])
 
   // ══ Filter questions by mode ══
@@ -182,7 +164,6 @@ function App() {
               playerName={playerName}
               questions={getQuestionsForMode(selectedMode)}
               onFinish={handleFinish}
-              onHome={handleGoHome}
             />
           </motion.div>
         )}
@@ -198,7 +179,7 @@ function App() {
             <SummaryScreen
               playerName={playerName}
               results={results}
-              totalQuestions={getQuestionsForMode(selectedMode).length}
+              totalQuestions={results.length}
               onRestart={handleRestart}
               onHome={handleGoHome}
             />

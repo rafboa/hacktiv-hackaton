@@ -33,7 +33,7 @@
             "value": "# paste content of langflow/components/arith_lesson_engine.py"
           },
           "mode": { "value": "INITIAL" },
-          "demo_seed": { "value": "ON" }
+          "demo_seed": { "value": "OFF" }
         },
         "position": { "x": 600, "y": 120 }
       },
@@ -46,7 +46,7 @@
             "value": "# paste content of langflow/components/arith_lesson_engine.py"
           },
           "mode": { "value": "TRANSFER" },
-          "demo_seed": { "value": "ON" }
+          "demo_seed": { "value": "OFF" }
         },
         "position": { "x": 600, "y": 480 }
       },
@@ -59,7 +59,7 @@
             "value": "# paste content of langflow/components/arith_lesson_engine.py"
           },
           "mode": { "value": "FALLBACK" },
-          "demo_seed": { "value": "ON" }
+          "demo_seed": { "value": "OFF" }
         },
         "position": { "x": 1380, "y": 680 }
       },
@@ -122,7 +122,8 @@
         "template": {
           "code": {
             "value": "# paste content of langflow/components/arith_plan_guard.py"
-          }
+          },
+          "validation_mode": { "value": "AI_PLAN" }
         },
         "position": { "x": 1380, "y": 300 }
       },
@@ -174,7 +175,8 @@
         "template": {
           "code": {
             "value": "# paste content of langflow/components/arith_plan_guard.py"
-          }
+          },
+          "validation_mode": { "value": "AI_PLAN" }
         },
         "position": { "x": 1900, "y": 480 }
       },
@@ -185,7 +187,8 @@
         "template": {
           "code": {
             "value": "# paste content of langflow/components/arith_plan_guard.py"
-          }
+          },
+          "validation_mode": { "value": "PROBLEM" }
         },
         "position": { "x": 860, "y": 120 }
       },
@@ -196,7 +199,8 @@
         "template": {
           "code": {
             "value": "# paste content of langflow/components/arith_plan_guard.py"
-          }
+          },
+          "validation_mode": { "value": "PROBLEM" }
         },
         "position": { "x": 860, "y": 480 }
       },

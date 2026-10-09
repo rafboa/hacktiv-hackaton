@@ -4,16 +4,19 @@ import {
   requestSupport,
   requestTransfer,
   checkLangflowHealth,
-  type ProblemPlan,
-  type LangflowEnvelope,
+  type ArithResponse,
+  type SupportRequestPayload,
+  type TransferRequestPayload,
+  type LearnerContext,
 } from '../utils/langflowClient';
-import type { Question } from '../utils/sampleQuestions';
 
 /**
- * useLangflow — React hook for AI-powered question generation via Langflow.
+ * useLangflow — React hook for the Arith teaching planner.
  *
- * Falls back to local sampleQuestions when Langflow is unreachable or
+ * Falls back gracefully when Langflow is unreachable or
  * VITE_LANGFLOW_FLOW_ID is not configured.
+ *
+ * All public methods return null on any error (caller supplies fallback).
  */
 export default function useLangflow() {
   const [connected, setConnected] = useState(false);
@@ -24,59 +27,51 @@ export default function useLangflow() {
     checkLangflowHealth().then((h) => {
       setConnected(h.ok);
       if (!h.ok) {
-        console.warn(`Langflow not available: ${h.error}. Using local questions.`);
+        console.warn(`Langflow not available: ${h.error}. Using local fallback.`);
       }
     });
   }, []);
 
-  /**
-   * Convert a Langflow ProblemPlan into the Question format the UI expects.
-   */
-  const planToQuestion = useCallback((plan: ProblemPlan): Question => {
-    return {
-      type: 'math_steps',
-      visual: plan.visual || 'blocks',
-      question: plan.question,
-      steps: plan.steps,
-      answer: plan.answer,
-      hints: plan.hints || ['Coba lagi!', 'Perhatikan baloknya', `Jawabannya adalah ${plan.answer}`],
-    };
-  }, []);
-
   const fetchProblem = useCallback(
-    async (difficulty?: 'easy' | 'medium' | 'hard'): Promise<Question | null> => {
+    async (options?: {
+      purpose?: 'INITIAL' | 'NEXT' | 'SIMPLIFIED';
+      learnerContext?: Partial<LearnerContext>;
+    }): Promise<ArithResponse | null> => {
       if (!connected) return null;
       setLoading(true);
       setError(null);
       try {
-        const plan = await requestProblem(difficulty);
-        return planToQuestion(plan);
+        return await requestProblem(options);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        setError(msg);
-        console.error('Langflow requestProblem failed:', msg);
+        if (msg !== 'STALE_RESPONSE') {
+          setError(msg);
+          console.error('Langflow requestProblem failed:', msg);
+        }
         return null;
       } finally {
         setLoading(false);
       }
     },
-    [connected, planToQuestion]
+    [connected]
   );
 
   const fetchSupport = useCallback(
-    async (context: {
-      payload: Parameters<typeof requestSupport>[0]['payload'];
-      learner_context: Parameters<typeof requestSupport>[0]['learner_context'];
-      client_capabilities: Parameters<typeof requestSupport>[0]['client_capabilities'];
-    }): Promise<LangflowEnvelope | null> => {
+    async (
+      payload: SupportRequestPayload,
+      learnerContext?: Partial<LearnerContext>
+    ): Promise<ArithResponse | null> => {
       if (!connected) return null;
       setLoading(true);
       setError(null);
       try {
-        return await requestSupport(context);
+        return await requestSupport(payload, learnerContext);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        setError(msg);
+        if (msg !== 'STALE_RESPONSE') {
+          setError(msg);
+          console.error('Langflow requestSupport failed:', msg);
+        }
         return null;
       } finally {
         setLoading(false);
@@ -86,26 +81,27 @@ export default function useLangflow() {
   );
 
   const fetchTransfer = useCallback(
-    async (context: {
-      original_question: string;
-      original_answer: number;
-      operator: string;
-    }): Promise<Question | null> => {
+    async (
+      payload: TransferRequestPayload,
+      learnerContext?: Partial<LearnerContext>
+    ): Promise<ArithResponse | null> => {
       if (!connected) return null;
       setLoading(true);
       setError(null);
       try {
-        const plan = await requestTransfer(context);
-        return planToQuestion(plan);
+        return await requestTransfer(payload, learnerContext);
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
-        setError(msg);
+        if (msg !== 'STALE_RESPONSE') {
+          setError(msg);
+          console.error('Langflow requestTransfer failed:', msg);
+        }
         return null;
       } finally {
         setLoading(false);
       }
     },
-    [connected, planToQuestion]
+    [connected]
   );
 
   return {

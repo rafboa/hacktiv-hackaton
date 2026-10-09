@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import WobbleButton from '../components/WobbleButton';
 
@@ -7,19 +7,11 @@ interface FeedbackOverlayProps {
   equation: string;
   playerName: string;
   onNext: () => void;
+  onFinish: () => void;
+  nextLabel?: string;
 }
 
-const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }: FeedbackOverlayProps) => {
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout>;
-    if (isCorrect) {
-      timer = setTimeout(() => {
-        onNext();
-      }, 3000);
-    }
-    return () => clearTimeout(timer);
-  }, [isCorrect, onNext]);
-
+const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext, onFinish, nextLabel }: FeedbackOverlayProps) => {
   return (
     <AnimatePresence>
       <motion.div
@@ -82,10 +74,13 @@ const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }: FeedbackOv
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1 }}
-              className="mt-12"
+              className="mt-12 flex flex-col sm:flex-row gap-4"
             >
               <WobbleButton onClick={onNext} variant="primary">
-                Soal Berikutnya &rarr;
+                {nextLabel ?? 'Lanjut soal berikutnya'} &rarr;
+              </WobbleButton>
+              <WobbleButton onClick={onFinish} variant="secondary">
+                Selesai belajar
               </WobbleButton>
             </motion.div>
           </div>
@@ -129,10 +124,13 @@ const FeedbackOverlay = ({ isCorrect, equation, playerName, onNext }: FeedbackOv
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
-              className="mt-12"
+              className="mt-12 flex flex-col sm:flex-row gap-4"
             >
-              <WobbleButton onClick={onNext} variant="secondary">
-                Lanjut &rarr;
+              <WobbleButton onClick={onNext} variant="primary">
+                Lanjut soal berikutnya &rarr;
+              </WobbleButton>
+              <WobbleButton onClick={onFinish} variant="secondary">
+                Selesai belajar
               </WobbleButton>
             </motion.div>
           </div>

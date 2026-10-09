@@ -6,9 +6,12 @@ import WobbleButton from '../components/WobbleButton';
 import Mascot from '../components/Mascot';
 import SpeechBubble from '../components/SpeechBubble';
 import { fadeUp, containerVariants } from '../utils/springs';
+import { isDemoMode } from '../utils/demoMode';
 
 interface QuestionResult {
   correct: boolean;
+  hintsUsed?: number;
+  problemKind?: 'REGULAR' | 'TRANSFER';
 }
 
 interface SummaryScreenProps {
@@ -23,6 +26,8 @@ const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, on
   const [countedCorrect, setCountedCorrect] = useState(0);
 
   const correctCount = results.filter(r => r.correct).length;
+  const helpedCount = results.filter(r => (r.hintsUsed ?? 0) > 0).length;
+  const transferCorrectCount = results.filter(r => r.problemKind === 'TRANSFER' && r.correct).length;
   const percentage = totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
 
   let stars = '🌟';
@@ -47,6 +52,11 @@ const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, on
       <CornerBar playerName="Selesai!" currentQuestion={totalQuestions} totalQuestions={totalQuestions} onMenuAction={onHome} />
 
       <main className="flex-1 flex flex-col items-center justify-center w-full max-w-2xl mx-auto z-10 pt-10">
+        {isDemoMode() && (
+          <div className="mb-5 rounded-full bg-[#FFF1C2] px-4 py-2 text-sm font-extrabold tracking-wide text-[#725400]">
+            HASIL SIMULASI DEMO
+          </div>
+        )}
         <motion.h1
           variants={fadeUp}
           initial="hidden"
@@ -75,6 +85,14 @@ const SummaryScreen = ({ playerName, results = [], totalQuestions, onRestart, on
                 <div className="flex justify-between items-center text-xl md:text-2xl">
                   <span className="text-[#888] font-bold">Jawaban benar:</span>
                   <span className="text-3xl font-black text-[#34C759]">{countedCorrect}</span>
+                </div>
+                <div className="flex justify-between items-center text-lg md:text-xl">
+                  <span className="text-[#888] font-bold">Soal dengan bantuan:</span>
+                  <span className="text-2xl font-black text-[#4A90D9]">{helpedCount}</span>
+                </div>
+                <div className="flex justify-between items-center text-lg md:text-xl">
+                  <span className="text-[#888] font-bold">Soal transfer benar:</span>
+                  <span className="text-2xl font-black text-[#4A90D9]">{transferCorrectCount}</span>
                 </div>
                 {/* Progress bar */}
                 <div className="h-6 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner">

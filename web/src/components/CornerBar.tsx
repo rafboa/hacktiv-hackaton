@@ -8,7 +8,7 @@ interface CornerBarProps {
   onMenuAction?: (action: string) => void;
 }
 
-export default function CornerBar({ playerName = 'Pelajar', currentQuestion = 1, totalQuestions = 10, onMenuAction }: CornerBarProps) {
+export default function CornerBar({ playerName = 'Pelajar', currentQuestion = 1, totalQuestions = 0, onMenuAction }: CornerBarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -20,6 +20,11 @@ export default function CornerBar({ playerName = 'Pelajar', currentQuestion = 1,
         {totalQuestions > 0 && (
           <span className="text-lg font-bold text-[#4A90D9] bg-white/80 px-3 py-1 rounded-full backdrop-blur-sm shadow-sm border border-blue-100">
             Soal {currentQuestion} / {totalQuestions}
+          </span>
+        )}
+        {totalQuestions <= 0 && currentQuestion > 0 && (
+          <span className="text-lg font-bold text-[#4A90D9] bg-white/80 px-3 py-1 rounded-full backdrop-blur-sm shadow-sm border border-blue-100">
+            Soal {currentQuestion}
           </span>
         )}
         <motion.button
