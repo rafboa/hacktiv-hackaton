@@ -11,7 +11,7 @@ from langflow.io import MessageTextInput, Output
 from langflow.schema import Data
 
 
-SUPPORTED_SCHEMA_VERSIONS = {"1"}
+SUPPORTED_SCHEMA_VERSIONS = {"1", "1.0"}
 SUPPORTED_EVENTS = {"PROBLEM_REQUESTED", "SUPPORT_REQUESTED", "TRANSFER_REQUESTED"}
 
 
@@ -74,6 +74,43 @@ class ArithRequestGateway(Component):
         # Strip fields the backend should never receive from untrusted input
         req.pop("api_key", None)
         req.pop("child_name", None)
+
+        # Convert the v1 domain payload into the flat fields consumed by the
+        # deterministic catalog, context builder, and plan guard.
+        if req.get("event_type") == "SUPPORT_REQUESTED":
+            payload = req.get("payload") if isinstance(req.get("payload"), dict) else {}
+            problem = payload.get("problem") if isinstance(payload.get("problem"), dict) else {}
+            attempt = payload.get("attempt") if isinstance(payload.get("attempt"), dict) else {}
+            reasoning = attempt.get("reasoning") if isinstance(attempt.get("reasoning"), dict) else {}
+            learner = req.get("learner_context") if isinstance(req.get("learner_context"), dict) else {}
+            capabilities = req.get("client_capabilities") if isinstance(req.get("client_capabilities"), dict) else {}
+            operands = problem.get("operands") if isinstance(problem.get("operands"), list) else []
+
+            if len(operands) == 2:
+                req.setdefault("operand_a", operands[0])
+                req.setdefault("operand_b", operands[1])
+            req.setdefault("problem_id", problem.get("problem_id", ""))
+            req.setdefault("concept", problem.get("concept", "ADDITION_CROSSING_TEN"))
+            req.setdefault("operation", problem.get("operation", "ADDITION"))
+            req.setdefault("correct_answer", problem.get("correct_answer"))
+            req.setdefault("student_answer", attempt.get("submitted_answer"))
+            req.setdefault("attempt_number", attempt.get("attempt_number", 1))
+            req.setdefault("support_level", learner.get("support_level", 1))
+            req.setdefault("supported_actions", capabilities.get("supported_actions", []))
+            reasoning_mode = reasoning.get("mode", "SKIPPED")
+            if reasoning_mode not in {"TEXT", "VOICE", "OPTION", "SKIPPED"}:
+                reasoning_mode = "SKIPPED"
+            reasoning_value = (
+                reasoning.get("text") if reasoning_mode == "TEXT" else
+                reasoning.get("transcript") if reasoning_mode == "VOICE" else
+                reasoning.get("option_code") if reasoning_mode == "OPTION" else
+                None
+            )
+            req["reasoning_mode"] = reasoning_mode
+            req["confirmed_reasoning"] = (
+                reasoning_value.strip()[:500] if isinstance(reasoning_value, str) else None
+            )
+
         req["_gateway_ms"] = round((time.monotonic() - t_start) * 1000, 2)
 
         self.log(

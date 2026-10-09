@@ -3,14 +3,12 @@ import { motion } from 'framer-motion';
 
 interface NumberPadProps {
   onSelect: (num: number) => void;
-  onMicPress?: () => void;
   selectedNumber?: number | null;
   disabled?: boolean;
   max?: number;
-  isListening?: boolean;
 }
 
-export default function NumberPad({ onSelect, onMicPress, selectedNumber, disabled = false, max = 20, isListening = false }: NumberPadProps) {
+export default function NumberPad({ onSelect, selectedNumber, disabled = false, max = 20 }: NumberPadProps) {
   const numbers = Array.from({ length: max }, (_, i) => i + 1);
 
   return (
@@ -39,23 +37,6 @@ export default function NumberPad({ onSelect, onMicPress, selectedNumber, disabl
         );
       })}
 
-      {/* Microphone button */}
-      <motion.button
-        disabled={disabled}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: max * 0.02, type: 'spring' }}
-        whileHover={!disabled ? { scale: 1.1, backgroundColor: '#E8F1FB' } : {}}
-        whileTap={!disabled ? { scale: 0.85 } : {}}
-        onClick={() => onMicPress?.()}
-        className={`w-11 h-11 sm:w-14 sm:h-14 rounded-2xl flex items-center justify-center text-xl border ${
-          isListening
-            ? 'bg-red-100 border-red-400 animate-pulse'
-            : 'bg-white border-gray-200'
-        } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-      >
-        {isListening ? '🔴' : '🎙'}
-      </motion.button>
     </div>
   );
 }

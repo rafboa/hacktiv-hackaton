@@ -65,12 +65,9 @@ export default function useLangflow() {
 
   const fetchSupport = useCallback(
     async (context: {
-      question: string;
-      operands: number[];
-      operator: string;
-      answer: number;
-      attempts: number;
-      student_answers: number[];
+      payload: Parameters<typeof requestSupport>[0]['payload'];
+      learner_context: Parameters<typeof requestSupport>[0]['learner_context'];
+      client_capabilities: Parameters<typeof requestSupport>[0]['client_capabilities'];
     }): Promise<LangflowEnvelope | null> => {
       if (!connected) return null;
       setLoading(true);

@@ -8,14 +8,16 @@ import ProgressDots from '../components/ProgressDots';
 import Mascot from '../components/Mascot';
 import SpeechBubble from '../components/SpeechBubble';
 import HintCard from '../components/HintCard';
+import ReasoningInput from '../components/ReasoningInput';
 import FeedbackOverlay from './FeedbackOverlay';
 import useTTS from '../hooks/useTTS';
-import useSTT from '../hooks/useSTT';
+import useLangflow from '../hooks/useLangflow';
 import { bouncy } from '../utils/springs';
 import type { Question } from '../utils/sampleQuestions';
 import type { MascotState } from '../components/Mascot';
+import type { LangflowEnvelope } from '../utils/langflowClient';
 
-type Phase = 'intro' | 'stepping' | 'answering' | 'feedback';
+type Phase = 'intro' | 'stepping' | 'answering' | 'askingReasoning' | 'loadingSupport' | 'feedback';
 
 interface QuestionResult {
   questionIndex: number;
@@ -41,6 +43,41 @@ interface QuestionScreenProps {
   onHome?: () => void;
 }
 
+function readSupportNarration(response: LangflowEnvelope | null): string | null {
+  if (!response || response.status === 'ERROR') return null;
+
+  const payload = response.payload as {
+    plan?: {
+      steps?: Array<{
+        narration?: { text?: string } | null;
+        params?: Record<string, unknown>;
+      }>;
+    };
+  };
+  const narration = (payload.plan?.steps ?? [])
+    .map((step) => {
+      const spokenText = step.narration?.text;
+      if (typeof spokenText === 'string' && spokenText.trim()) return spokenText.trim();
+      const prompt = step.params?.prompt;
+      if (typeof prompt === 'string' && prompt.trim()) return prompt.trim();
+      const text = step.params?.text;
+      if (typeof text === 'string' && text.trim()) return text.trim();
+      return null;
+    })
+    .filter((text): text is string => text !== null);
+
+  return narration.length ? narration.join(' ') : null;
+}
+
+function parseQuestion(question: string): { operands: [number, number]; operation: 'ADDITION' | 'SUBTRACTION' } {
+  const match = question.match(/(-?\d+)\s*([+-])\s*(-?\d+)/);
+  if (!match) return { operands: [0, 0], operation: 'ADDITION' };
+  return {
+    operands: [Number(match[1]), Number(match[3])],
+    operation: match[2] === '-' ? 'SUBTRACTION' : 'ADDITION',
+  };
+}
+
 /**
  * QuestionScreen — Core learning screen with step-by-step animation engine
  *
@@ -64,6 +101,9 @@ const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScr
   const [showFeedback, setShowFeedback] = useState(false);
   const [isCorrectAnswer, setIsCorrectAnswer] = useState(false);
   const [results, setResults] = useState<QuestionResult[]>([]);
+  const [wrongAnswers, setWrongAnswers] = useState<number[]>([]);
+  const [reasoningText, setReasoningText] = useState('');
+  const [supportHintText, setSupportHintText] = useState<string | null>(null);
 
   // Step engine state
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -74,29 +114,10 @@ const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScr
   const [speechText, setSpeechText] = useState('');
 
   const { speak } = useTTS();
-  const { startListening, stopListening, transcript, isListening, resetTranscript } = useSTT();
+  const { fetchSupport } = useLangflow();
   const currentQ = questions[currentIndex];
   const resultsRef = useRef(results);
   resultsRef.current = results;
-
-  // Parse STT transcript into a number and submit it
-  useEffect(() => {
-    if (!transcript || phase !== 'answering') return;
-
-    const wordToNum: Record<string, number> = {
-      satu: 1, dua: 2, tiga: 3, empat: 4, lima: 5,
-      enam: 6, tujuh: 7, delapan: 8, sembilan: 9, sepuluh: 10,
-      sebelas: 11, 'dua belas': 12, 'tiga belas': 13, 'empat belas': 14, 'lima belas': 15,
-      'enam belas': 16, 'tujuh belas': 17, 'delapan belas': 18, 'sembilan belas': 19, 'dua puluh': 20,
-    };
-
-    const raw = transcript.trim().toLowerCase();
-    const parsed = wordToNum[raw] ?? parseInt(raw, 10);
-    if (parsed && parsed >= 1 && parsed <= 20) {
-      handleAnswerSelect(parsed);
-      resetTranscript();
-    }
-  }, [transcript]);
 
   // ─── Reset for new question ───
   useEffect(() => {
@@ -108,6 +129,9 @@ const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScr
     setSelectedAnswer(null);
     setShowFeedback(false);
     setIsCorrectAnswer(false);
+    setWrongAnswers([]);
+    setReasoningText('');
+    setSupportHintText(null);
     setMascotState('speaking');
     setCurrentStepIndex(0);
     setVisibleBlocks([]);
@@ -217,6 +241,7 @@ const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScr
       }, 2500);
     } else {
       const newAttempts = attempts + 1;
+      setWrongAnswers((previous) => [...previous, num]);
       setAttempts(newAttempts);
       setMascotState('encourage');
 
@@ -229,6 +254,8 @@ const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScr
           hintsUsed: 3
         }];
         setResults(newResults);
+        setShowNumberPad(false);
+        setShowHint(false);
         setShowFeedback(true);
         setPhase('feedback');
 
@@ -241,18 +268,86 @@ const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScr
           }
         }, 3000);
       } else {
-        // Show hint and allow retry
         setHintLevel(newAttempts);
-        setShowHint(true);
-
-        setTimeout(() => {
-          setPhase('answering');
-          setMascotState('thinking');
-          setSelectedAnswer(null);
-        }, 1500);
+        setShowHint(false);
+        setShowNumberPad(false);
+        setReasoningText('');
+        setSpeechText('Bagaimana kamu menghitungnya?');
+        speak('Bagaimana kamu menghitungnya?');
+        setPhase('askingReasoning');
       }
     }
-  }, [phase, currentQ, currentIndex, attempts, hintLevel, questions.length, onFinish]);
+  }, [phase, currentQ, currentIndex, attempts, hintLevel, questions.length, onFinish, speak]);
+
+  const submitReasoning = useCallback(async (skipped = false) => {
+    const explanation = reasoningText.trim();
+    if (!skipped && !explanation) return;
+
+    const { operands, operation } = parseQuestion(currentQ.question);
+    const attemptNumber = Math.max(attempts, 1);
+    setPhase('loadingSupport');
+    setMascotState('thinking');
+
+    const response = await fetchSupport({
+      payload: {
+        problem: {
+          problem_id: `problem_${operands[0]}_${operation === 'ADDITION' ? 'plus' : 'minus'}_${operands[1]}`,
+          type: 'ARITHMETIC',
+          concept: operation === 'ADDITION' ? 'ADDITION_CROSSING_TEN' : 'SUBTRACTION_WITHIN_20',
+          operation,
+          operands,
+          correct_answer: currentQ.answer,
+          display_text: currentQ.question,
+          number_range: { min: 0, max: 20 },
+        },
+        attempt: {
+          attempt_id: `attempt_${currentIndex + 1}_${attemptNumber}`,
+          attempt_number: attemptNumber,
+          submitted_answer: wrongAnswers.at(-1) ?? 0,
+          input_mode: 'BUTTONS',
+          confirmed: true,
+          reasoning: {
+            mode: skipped ? 'SKIPPED' : 'TEXT',
+            text: skipped ? null : explanation,
+            transcript: null,
+            option_code: null,
+            skipped,
+          },
+        },
+        current_plan: { plan_id: `plan_${currentIndex + 1}`, plan_version: 1 },
+      },
+      learner_context: {
+        support_level: Math.min(attemptNumber, 3),
+        effective_visuals: [],
+        recent_observations: [],
+        preferences: { tts_enabled: true, input_mode: 'BUTTONS_AND_TEXT', pace: 'NORMAL' },
+      },
+      client_capabilities: {
+        plan_version: 1,
+        visuals: ['BLOCKS', 'NUMBER_LINE', 'EQUATION'],
+        input_modes: ['BUTTONS', 'TEXT'],
+        supported_actions: [
+          'CLEAR_STAGE', 'SHOW_TEXT', 'SPEAK', 'SHOW_OBJECTS', 'ADD_OBJECTS', 'REMOVE_OBJECTS',
+          'MOVE_OBJECTS', 'GROUP_TO_TEN', 'SHOW_NUMBER_LINE', 'PLACE_MARKER', 'MOVE_MARKER',
+          'SHOW_EQUATION', 'HIGHLIGHT', 'ASK_QUESTION', 'ASK_REASONING', 'SHOW_FEEDBACK',
+        ],
+        tts_available: true,
+        stt_available: false,
+        reduced_motion: false,
+      },
+    });
+
+    const localHint = currentQ.hints?.[Math.max(0, Math.min(attemptNumber - 1, currentQ.hints.length - 1))]
+      ?? 'Kita coba cara lain bersama-sama.';
+    const helpText = readSupportNarration(response) ?? localHint;
+    setSupportHintText(helpText);
+    setSpeechText(helpText);
+    speak(helpText);
+    setShowHint(true);
+    setSelectedAnswer(null);
+    setShowNumberPad(true);
+    setPhase('answering');
+  }, [reasoningText, currentQ, attempts, wrongAnswers, currentIndex, fetchSupport, speak]);
 
   // ─── Derived values ───
   const equation = currentQ ? currentQ.question.replace(' = ?', ` = ${currentQ.answer}`) : '';
@@ -364,15 +459,31 @@ const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScr
                 >
                   <NumberPad
                     onSelect={handleAnswerSelect}
-                    onMicPress={() => isListening ? stopListening() : startListening()}
                     selectedNumber={selectedAnswer}
                     disabled={phase !== 'answering'}
                     max={20}
-                    isListening={isListening}
                   />
                 </motion.div>
               )}
             </AnimatePresence>
+
+            <AnimatePresence>
+              {phase === 'askingReasoning' && (
+                <ReasoningInput
+                  value={reasoningText}
+                  loading={false}
+                  onChange={setReasoningText}
+                  onSubmit={() => void submitReasoning(false)}
+                  onSkip={() => void submitReasoning(true)}
+                />
+              )}
+            </AnimatePresence>
+
+            {phase === 'loadingSupport' && (
+              <div role="status" className="rounded-2xl bg-white px-5 py-3 text-sm font-medium text-[#555] shadow-sm">
+                Menyiapkan bantuan…
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -393,7 +504,7 @@ const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScr
           >
             <HintCard
               level={hintLevel}
-              text={currentQ.hints?.[hintLevel - 1] ?? 'Coba lagi!'}
+              text={supportHintText ?? currentQ.hints?.[hintLevel - 1] ?? 'Coba lagi!'}
               onDismiss={() => setShowHint(false)}
             />
           </motion.div>

@@ -16,7 +16,7 @@ const FLOW_ID = import.meta.env.VITE_LANGFLOW_FLOW_ID || '';
 // ─── Types ───
 
 export interface LangflowRequest {
-  schema_version: '1';
+  schema_version: '1.0';
   request_id: string;
   session_id: string;
   event_type: 'PROBLEM_REQUESTED' | 'SUPPORT_REQUESTED' | 'TRANSFER_REQUESTED';
@@ -46,6 +46,51 @@ export interface ProblemPlan {
     say: string;
   }>;
   hints: string[];
+}
+
+export interface SupportRequestPayload {
+  learner_context: {
+    support_level: number;
+    effective_visuals: string[];
+    recent_observations: Array<{ code: string; scope: string }>;
+    preferences: { tts_enabled: boolean; input_mode: 'BUTTONS_AND_TEXT'; pace: string };
+  };
+  client_capabilities: {
+    plan_version: 1;
+    visuals: string[];
+    input_modes: string[];
+    supported_actions: string[];
+    tts_available: boolean;
+    stt_available: boolean;
+    reduced_motion: boolean;
+  };
+  payload: {
+    problem: {
+      problem_id: string;
+      type: 'ARITHMETIC';
+      concept: string;
+      operation: 'ADDITION' | 'SUBTRACTION';
+      operands: [number, number];
+      correct_answer: number;
+      display_text: string;
+      number_range: { min: number; max: number };
+    };
+    attempt: {
+      attempt_id: string;
+      attempt_number: number;
+      submitted_answer: number;
+      input_mode: 'BUTTONS';
+      confirmed: true;
+      reasoning: {
+        mode: 'TEXT' | 'SKIPPED';
+        text: string | null;
+        transcript: null;
+        option_code: null;
+        skipped: boolean;
+      };
+    };
+    current_plan: { plan_id: string; plan_version: 1 };
+  };
 }
 
 // ─── Helpers ───
@@ -117,7 +162,7 @@ export async function requestProblem(
   difficulty?: 'easy' | 'medium' | 'hard'
 ): Promise<ProblemPlan> {
   const envelope = await callLangflow({
-    schema_version: '1',
+    schema_version: '1.0',
     request_id: generateRequestId(),
     session_id: getSessionId(),
     event_type: 'PROBLEM_REQUESTED',
@@ -136,19 +181,16 @@ export async function requestProblem(
  * Sends the current question context + attempt history to the AI planner.
  */
 export async function requestSupport(context: {
-  question: string;
-  operands: number[];
-  operator: string;
-  answer: number;
-  attempts: number;
-  student_answers: number[];
+  payload: SupportRequestPayload['payload'];
+  learner_context: SupportRequestPayload['learner_context'];
+  client_capabilities: SupportRequestPayload['client_capabilities'];
 }): Promise<LangflowEnvelope> {
   return callLangflow({
-    schema_version: '1',
+    schema_version: '1.0',
     request_id: generateRequestId(),
     session_id: getSessionId(),
     event_type: 'SUPPORT_REQUESTED',
-    payload: context,
+    ...context,
   });
 }
 
@@ -161,7 +203,7 @@ export async function requestTransfer(context: {
   operator: string;
 }): Promise<ProblemPlan> {
   const envelope = await callLangflow({
-    schema_version: '1',
+    schema_version: '1.0',
     request_id: generateRequestId(),
     session_id: getSessionId(),
     event_type: 'TRANSFER_REQUESTED',

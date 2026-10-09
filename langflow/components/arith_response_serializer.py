@@ -20,7 +20,7 @@ from langflow.custom import Component
 from langflow.io import DataInput, DropdownInput, Output
 from langflow.schema import Data, Message
 
-_SCHEMA_VERSION = "1"
+_SCHEMA_VERSION = "1.0"
 
 _STATUS_MAP = {
     "PROBLEM_PLAN": ("OK", "DETERMINISTIC"),

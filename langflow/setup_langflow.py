@@ -10,7 +10,7 @@ What it does:
   1. Reads the simplified flow spec in langflow/flow/arith-teaching-planner.json
   2. Asks Langflow to compile each custom component (.py) into a node schema
      via POST /api/v1/custom_component
-  3. Pulls built-in node schemas (ChatInput, ChatOutput, Agent, DeepSeek) from GET /api/v1/all
+  3. Pulls built-in node schemas (ChatInput, ChatOutput, Agent) from GET /api/v1/all
   4. Assembles React Flow nodes ("genericNode") and typed edges the canvas can render
   5. Replaces any older "arith-teaching-planner" flow, uploads the new one,
      and writes the flow ID into web/.env
@@ -63,13 +63,11 @@ BUILTIN_TYPES = {
     "ChatInput": "ChatInput",
     "ChatOutput": "ChatOutput",
     "Agent": "Agent",
-    "DeepSeekModel": "ext:deepseek:DeepSeekModelComponent@official",
 }
 
 # Spec names that changed in current Langflow versions
 HANDLE_ALIASES = {
     ("Agent", "agent_llm"): "model",
-    ("DeepSeekModel", "language_model"): "model_output",
     ("ChatInput", "store_message"): "should_store_message",
     ("ChatOutput", "store_message"): "should_store_message",
 }
@@ -309,7 +307,8 @@ def main():
 
     print(f"\nFlow ID: {flow_id}")
     print(f"Open: {LANGFLOW_URL}/flow/{flow_id}")
-    print("Then paste your DeepSeek API key into the DeepSeek node and restart the Vite dev server.")
+    print("Configure an OpenAI-compatible provider in Langflow Settings → Model Providers.")
+    print("Then select the configured model in both Agent nodes and restart the Vite dev server.")
 
 
 if __name__ == "__main__":

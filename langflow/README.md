@@ -1,164 +1,88 @@
 # Arith Langflow Implementation
 
-> Reference: [`Langflow-Architecture-Arith.md`](../Langflow-Architecture-Arith.md)  
-> Target Langflow version: **1.11.5** (local) / tested against 1.12.x docs  
-> Flow endpoint: `POST /api/v1/run/arith-teaching-planner`
+> Architecture: [`Langflow-Architecture-Arith.md`](../Langflow-Architecture-Arith.md)
+> Target Langflow version: **1.11.5** (local)
+> Flow endpoint: `POST /api/v1/run/{flow_id}`
 
----
+## Components
 
-## Directory layout
-
-```
+```text
 langflow/
-├── components/                  # Six custom Python components
+├── components/
 │   ├── arith_request_gateway.py
 │   ├── arith_lesson_engine.py
 │   ├── support_context_builder.py
 │   ├── teaching_strategy_catalog.py
 │   ├── arith_plan_guard.py
 │   └── arith_response_serializer.py
-└── flow/
-    └── arith-teaching-planner.json   # Importable Langflow flow graph
+├── flow/arith-teaching-planner.json
+└── setup_langflow.py
 ```
 
----
+The model provider is configured in Langflow rather than embedded in the flow. This keeps the flow graph provider-neutral and keeps provider credentials on the Langflow server.
 
-## Custom components
+## Configure an LLM endpoint
 
-| File | Class | Spec § | Uses LLM |
-|---|---|:---:|:---:|
-| `arith_request_gateway.py` | `ArithRequestGateway` | §2, §5, §17 | No |
-| `arith_lesson_engine.py` | `ArithLessonEngine` | §6, §12, §13 | No |
-| `support_context_builder.py` | `SupportContextBuilder` | §7, §10, §12 | No |
-| `teaching_strategy_catalog.py` | `TeachingStrategyCatalog` | §8 | No |
-| `arith_plan_guard.py` | `ArithPlanGuard` | §11, §12 | No |
-| `arith_response_serializer.py` | `ArithResponseSerializer` | §14, §15 | No |
+The flow supports providers that expose an **OpenAI-compatible chat completions API**. In Langflow, open **Settings → Model Providers → OpenAI Compatible**, then enter the provider's base URL and API key. Langflow discovers models from the endpoint's `/v1/models` route. After saving, enable the model you want, then select it in the `Agent LLM` input on both **Teaching Planner Agent** and **Repair Planner Agent**.
 
----
+This works with compatible endpoints such as Gemini's OpenAI-compatible API, DeepSeek, OpenRouter, and compatible self-hosted servers. Provider APIs that use a different request protocol need a provider-specific Langflow integration. Do not put model provider API keys in the React app, request JSON, or flow JSON.
 
-## How to setup and load into Langflow
+For an endpoint running on the same machine or a private network, Langflow's SSRF protection may require the hostname/IP to be allowlisted in `LANGFLOW_SSRF_ALLOWED_HOSTS`.
 
-### Automated Setup (Recommended)
+## Import the flow
 
-We provide an automated script that compiles the custom Python components, formats the flow for the Langflow UI, uploads it, and writes the resulting Flow ID straight to your frontend's `.env` file.
-
-1. **Start Langflow** on your machine:
-   ```bash
-   langflow run
-   ```
-2. **Run the setup script**:
-   ```bash
-   python langflow/setup_langflow.py
-   ```
-   *(Requires the `requests` library: `pip install requests`)*
-3. **Configure the AI Node**:
-   - Open the Langflow UI at [http://localhost:7860](http://localhost:7860).
-   - Open the `arith-teaching-planner` flow.
-   - Find the **Google Generative AI** node and set your `api_key` (preferably via a Langflow Global Variable).
-
-### Manual Setup (Fallback)
-
-If you prefer to load it manually:
-1. Run Langflow with the components path exposed:
+1. Start Langflow with the custom component folder available if it is not already configured:
    ```bash
    export LANGFLOW_COMPONENTS_PATH=/path/to/langflow/components
    langflow run
    ```
-2. Open Langflow UI → **My Flows** → **Import**.
-3. Select `langflow/flow/arith-teaching-planner.json`.
-4. Replace the code in each `CustomComponent` block with the respective code from `langflow/components/` if they do not load automatically.
+2. Configure the OpenAI-compatible provider as described above.
+3. Build/import the flow:
+   ```bash
+   python langflow/setup_langflow.py
+   ```
+   The script compiles the Python components, builds the Langflow graph, uploads it, and writes the flow ID to `web/.env`. It requires the `requests` Python package.
+4. Open the flow in Langflow and select the configured model in both Agent nodes. The same provider/model can be used for planning and the one-time repair call.
+5. Restart the Vite development server so it loads the flow ID from `web/.env`.
 
----
+The script replaces an existing flow named `arith-teaching-planner` before uploading the generated graph.
 
-## Event routing
+## Request routing
 
-```
-Chat Input (JSON string)
-    └─► Arith Request Gateway
-            ├─ PROBLEM_REQUESTED  → Lesson Engine (INITIAL) → Plan Guard → Serializer → Chat Output
-            ├─ SUPPORT_REQUESTED  → Strategy Catalog ─┐
-            │                       Context Builder ───┴► Teaching Planner Agent
-            │                                               └─ valid ──────────────► Serializer → Chat Output
-            │                                               └─ invalid → Repair Agent
-            │                                                              └─ valid ─► Serializer → Chat Output
-            │                                                              └─ invalid → Fallback Engine → Serializer → Chat Output
-            ├─ TRANSFER_REQUESTED → Lesson Engine (TRANSFER) → Plan Guard → Serializer → Chat Output
-            └─ INVALID            → Error Serializer → Chat Output
-```
-
----
-
-## Build order (spec §19)
-
-| Stage | Components to wire |
-|---|---|
-| **1 — Deterministic** | Chat Input → Gateway → Lesson Engine (INITIAL) → Plan Guard → Serializer → Chat Output |
-| **2 — Support agent** | Gemini → Strategy Catalog → Context Builder → Agent → Plan Guard pass-1 |
-| **3 — Reliability** | Repair Agent → Fallback Engine → error/timeout paths |
-| **4 — Transfer** | Lesson Engine (TRANSFER) → Plan Guard → Serializer |
-
----
-
-## Canvas colour conventions (spec §18)
-
-| Colour | Node group |
-|---|---|
-| 🔵 Blue | Chat Input / Chat Output |
-| 🟢 Green | Deterministic components (Gateway, Lesson Engine, Catalog, Serializer) |
-| 🟣 Purple | AI / LLM (Gemini, Teaching Planner Agent, Repair Agent) |
-| 🟠 Orange | Validation / Fallback (Plan Guard, Fallback Engine) |
-| ⚫ Gray | Internal context builders |
-
----
-
-## Demo seeds
-
-| Event | Demo operands | Source |
-|---|---|---|
-| `PROBLEM_REQUESTED` | **8 + 5 = 13** | spec §6 |
-| `TRANSFER_REQUESTED` | **9 + 4 = 13** | spec §13 |
-
-Set `Demo Seed = OFF` on both `ArithLessonEngine` instances for random operands in production.
-
----
-
-## Gemini 3.6 Flash agent settings (spec §9)
-
-| Parameter | Value |
-|---|---|
-| Model | `gemini-3.6-flash` |
-| Temperature | `0.2` |
-| Max tokens | `1600` |
-| Output port | **Structured Response only** |
-| Chat history messages | `0` |
-| Tools | None (P0) |
-
----
-
-## Response envelope (spec §15)
-
-```json
-{
-  "schema_version": "1",
-  "request_id": "...",
-  "session_id": "...",
-  "status": "OK | FALLBACK | ERROR",
-  "source": "DETERMINISTIC | AI_VALIDATED",
-  "event_type": "PROBLEM_PLAN | SUPPORT_PLAN | TRANSFER_PLAN | ERROR_RESPONSE",
-  "payload": { "...plan fields..." }
-}
+```text
+Chat Input → Request Gateway
+  PROBLEM_REQUESTED  → deterministic Lesson Engine → Plan Guard → Serializer
+  SUPPORT_REQUESTED  → Strategy Catalog + Context Builder → Teaching Planner Agent
+                       valid plan → Serializer
+                       invalid plan → one Repair Agent pass → fallback if still invalid
+  TRANSFER_REQUESTED → deterministic Lesson Engine → Plan Guard → Serializer
+  INVALID            → Error Serializer
 ```
 
----
+Only the support and repair agents use the selected language model. The math engine remains responsible for operands and correct answers.
 
-## P0 acceptance criteria (spec §20)
+## Demo seed
 
-- [ ] Single endpoint accepts all three v1 events.
-- [ ] `PROBLEM_REQUESTED` and `TRANSFER_REQUESTED` make zero LLM calls.
-- [ ] `SUPPORT_REQUESTED` calls at most one planner + one repair agent.
-- [ ] Only Structured Response port wired on both agents.
-- [ ] Agent cannot overwrite canonical problem fields.
-- [ ] Every support plan passes Plan Guard before serialization.
-- [ ] Every invalid path has a fallback.
-- [ ] API returns pure JSON — no prose outside the envelope.
-- [ ] Flow JSON exports without Gemini API key embedded.
+| Event | Demo problem |
+|---|---|
+| `PROBLEM_REQUESTED` | `8 + 5 = 13` |
+| `TRANSFER_REQUESTED` | `9 + 4 = 13` |
+
+Set `Demo Seed = OFF` on the initial and transfer Lesson Engine instances to use generated operands.
+
+## Agent settings
+
+| Setting | Value |
+|---|---|
+| LLM | Select from Langflow's configured model providers |
+| Output | Structured Response only |
+| Chat history | 0 messages |
+| Built-in tools | Disabled for P0 |
+| Temperature | 0.2 where supported by the selected model |
+| Max output | 1600 tokens where supported by the selected model |
+
+The provider's supported parameters vary. Structured output is validated by the Arith Plan Guard before serialization.
+
+## Response envelope
+
+The serializer returns JSON as the Chat Output message. The current envelope contains `schema_version`, `request_id`, `session_id`, `status`, `source`, `event_type`, and `payload`.
