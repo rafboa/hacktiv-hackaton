@@ -36,25 +36,37 @@ langflow/
 
 ---
 
-## How to load into Langflow
+## How to setup and load into Langflow
 
-### Option A — Import the flow JSON
+### Automated Setup (Recommended)
 
-1. Open Langflow UI → **My Flows** → **Import**.
-2. Select `langflow/flow/arith-teaching-planner.json`.
-3. For each `CustomComponent` node, paste the matching component source from `langflow/components/` into the code field.
-4. Set the **Google Generative AI** node's `api_key` via a Langflow global variable (never hardcode).
-5. Save and run.
+We provide an automated script that compiles the custom Python components, formats the flow for the Langflow UI, uploads it, and writes the resulting Flow ID straight to your frontend's `.env` file.
 
-### Option B — Load components via custom-components path
+1. **Start Langflow** on your machine:
+   ```bash
+   langflow run
+   ```
+2. **Run the setup script**:
+   ```bash
+   python langflow/setup_langflow.py
+   ```
+   *(Requires the `requests` library: `pip install requests`)*
+3. **Configure the AI Node**:
+   - Open the Langflow UI at [http://localhost:7860](http://localhost:7860).
+   - Open the `arith-teaching-planner` flow.
+   - Find the **Google Generative AI** node and set your `api_key` (preferably via a Langflow Global Variable).
 
-Add `langflow/components/` to Langflow's `LANGFLOW_COMPONENTS_PATH` environment variable.  
-All six classes will appear in the component panel under **Custom**.
+### Manual Setup (Fallback)
 
-```bash
-export LANGFLOW_COMPONENTS_PATH=/path/to/langflow/components
-langflow run
-```
+If you prefer to load it manually:
+1. Run Langflow with the components path exposed:
+   ```bash
+   export LANGFLOW_COMPONENTS_PATH=/path/to/langflow/components
+   langflow run
+   ```
+2. Open Langflow UI → **My Flows** → **Import**.
+3. Select `langflow/flow/arith-teaching-planner.json`.
+4. Replace the code in each `CustomComponent` block with the respective code from `langflow/components/` if they do not load automatically.
 
 ---
 
