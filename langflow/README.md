@@ -43,7 +43,7 @@ langflow/
 1. Open Langflow UI → **My Flows** → **Import**.
 2. Select `langflow/flow/arith-teaching-planner.json`.
 3. For each `CustomComponent` node, paste the matching component source from `langflow/components/` into the code field.
-4. Set the **DeepSeek** node's `api_key` via a Langflow global variable (never hardcode).
+4. Set the **Google Generative AI** node's `api_key` via a Langflow global variable (never hardcode).
 5. Save and run.
 
 ### Option B — Load components via custom-components path
@@ -81,7 +81,7 @@ Chat Input (JSON string)
 | Stage | Components to wire |
 |---|---|
 | **1 — Deterministic** | Chat Input → Gateway → Lesson Engine (INITIAL) → Plan Guard → Serializer → Chat Output |
-| **2 — Support agent** | DeepSeek → Strategy Catalog → Context Builder → Agent → Plan Guard pass-1 |
+| **2 — Support agent** | Gemini → Strategy Catalog → Context Builder → Agent → Plan Guard pass-1 |
 | **3 — Reliability** | Repair Agent → Fallback Engine → error/timeout paths |
 | **4 — Transfer** | Lesson Engine (TRANSFER) → Plan Guard → Serializer |
 
@@ -93,7 +93,7 @@ Chat Input (JSON string)
 |---|---|
 | 🔵 Blue | Chat Input / Chat Output |
 | 🟢 Green | Deterministic components (Gateway, Lesson Engine, Catalog, Serializer) |
-| 🟣 Purple | AI / LLM (DeepSeek, Teaching Planner Agent, Repair Agent) |
+| 🟣 Purple | AI / LLM (Gemini, Teaching Planner Agent, Repair Agent) |
 | 🟠 Orange | Validation / Fallback (Plan Guard, Fallback Engine) |
 | ⚫ Gray | Internal context builders |
 
@@ -110,14 +110,13 @@ Set `Demo Seed = OFF` on both `ArithLessonEngine` instances for random operands 
 
 ---
 
-## DeepSeek agent settings (spec §9)
+## Gemini 3.6 Flash agent settings (spec §9)
 
 | Parameter | Value |
 |---|---|
-| Model | `deepseek-chat` |
+| Model | `gemini-3.6-flash` |
 | Temperature | `0.2` |
 | Max tokens | `1600` |
-| Seed (demo) | `42` |
 | Output port | **Structured Response only** |
 | Chat history messages | `0` |
 | Tools | None (P0) |
@@ -150,4 +149,4 @@ Set `Demo Seed = OFF` on both `ArithLessonEngine` instances for random operands 
 - [ ] Every support plan passes Plan Guard before serialization.
 - [ ] Every invalid path has a fallback.
 - [ ] API returns pure JSON — no prose outside the envelope.
-- [ ] Flow JSON exports without DeepSeek API key embedded.
+- [ ] Flow JSON exports without Gemini API key embedded.

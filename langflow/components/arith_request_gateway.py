@@ -32,10 +32,10 @@ class ArithRequestGateway(Component):
     ]
 
     outputs = [
-        Output(display_name="PROBLEM_REQUESTED", name="problem_out", method="route_problem"),
-        Output(display_name="SUPPORT_REQUESTED", name="support_out", method="route_support"),
-        Output(display_name="TRANSFER_REQUESTED", name="transfer_out", method="route_transfer"),
-        Output(display_name="INVALID", name="invalid_out", method="route_invalid"),
+        Output(display_name="PROBLEM_REQUESTED", name="problem_out", method="route_problem", group_outputs=True),
+        Output(display_name="SUPPORT_REQUESTED", name="support_out", method="route_support", group_outputs=True),
+        Output(display_name="TRANSFER_REQUESTED", name="transfer_out", method="route_transfer", group_outputs=True),
+        Output(display_name="INVALID", name="invalid_out", method="route_invalid", group_outputs=True),
     ]
 
     # ------------------------------------------------------------------ #

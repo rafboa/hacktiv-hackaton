@@ -10,6 +10,7 @@ import time
 from langflow.custom import Component
 from langflow.io import DataInput, DropdownInput, Output
 from langflow.schema import Data
+from langflow.schema.message import Message
 
 
 # Fields the agent is explicitly forbidden from receiving (spec §7)
@@ -97,7 +98,7 @@ class SupportContextBuilder(Component):
     #  Main build method                                                   #
     # ------------------------------------------------------------------ #
 
-    def build_context(self) -> Data:
+    def build_context(self) -> Message:
         t_start = time.monotonic()
         req = self._clean(dict(self.request_data.data) if self.request_data else {})
         catalog = dict(self.catalog_data.data) if self.catalog_data else {}
@@ -142,4 +143,4 @@ class SupportContextBuilder(Component):
             f"[ContextBuilder] mode={mode} concept={agent_context.get('concept')} "
             f"strategies={len(agent_context['strategy_candidates'])} ms={agent_context['_context_ms']}"
         )
-        return Data(data=agent_context)
+        return Message(text=json.dumps(agent_context, ensure_ascii=False))

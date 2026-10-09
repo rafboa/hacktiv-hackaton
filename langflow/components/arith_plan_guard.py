@@ -65,8 +65,8 @@ class ArithPlanGuard(Component):
     ]
 
     outputs = [
-        Output(display_name="valid_plan", name="valid_plan", method="get_valid"),
-        Output(display_name="invalid_plan", name="invalid_plan", method="get_invalid"),
+        Output(display_name="valid_plan", name="valid_plan", method="get_valid", group_outputs=True),
+        Output(display_name="invalid_plan", name="invalid_plan", method="get_invalid", group_outputs=True),
     ]
 
     # ------------------------------------------------------------------ #
