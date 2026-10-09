@@ -15,7 +15,11 @@ export default function BlockCube({ count, color = 'blue', onRemove, animated = 
 
   const bgColors: Record<string, string> = {
     blue: '#4A90D9',
-    orange: '#F0883E'
+    orange: '#F0883E',
+    green: '#34C759',
+    yellow: '#FFD60A',
+    red: '#FF3B30',
+    purple: '#AF52DE'
   };
 
   const bgColor = bgColors[color] ?? bgColors.blue;

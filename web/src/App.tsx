@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import './App.css'
 
@@ -182,6 +182,7 @@ function App() {
               playerName={playerName}
               questions={getQuestionsForMode(selectedMode)}
               onFinish={handleFinish}
+              onHome={handleGoHome}
             />
           </motion.div>
         )}

@@ -28,8 +28,8 @@ const SplashScreen = ({ onStart }: SplashScreenProps) => {
       {/* Film grain noise overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E')]"></div>
 
-      <div className="z-10 flex flex-col items-center text-center">
-        <h1 className="text-5xl md:text-7xl font-bold text-[#2C2C2C] mb-2 flex space-x-2">
+      <div className="z-10 flex flex-col items-center text-center px-6">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-[#2C2C2C] mb-2 flex space-x-1 sm:space-x-2 flex-wrap justify-center">
           {title1.map((char, index) => (
             <motion.span
               key={`title1-${index}`}
@@ -41,7 +41,7 @@ const SplashScreen = ({ onStart }: SplashScreenProps) => {
             </motion.span>
           ))}
         </h1>
-        <h1 className="text-5xl md:text-7xl font-bold text-[#4A90D9] mb-6 flex space-x-2">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-[#4A90D9] mb-6 flex space-x-1 sm:space-x-2 flex-wrap justify-center">
           {title2.map((char, index) => (
             <motion.span
               key={`title2-${index}`}

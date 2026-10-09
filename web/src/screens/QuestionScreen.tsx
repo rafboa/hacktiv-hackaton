@@ -4,11 +4,13 @@ import CornerBar from '../components/CornerBar';
 import BlockCube from '../components/BlockCube';
 import NumberLine from '../components/NumberLine';
 import NumberPad from '../components/NumberPad';
+import ProgressDots from '../components/ProgressDots';
 import Mascot from '../components/Mascot';
 import SpeechBubble from '../components/SpeechBubble';
 import HintCard from '../components/HintCard';
 import FeedbackOverlay from './FeedbackOverlay';
 import useTTS from '../hooks/useTTS';
+import useSTT from '../hooks/useSTT';
 import { bouncy } from '../utils/springs';
 import type { Question } from '../utils/sampleQuestions';
 import type { MascotState } from '../components/Mascot';
@@ -36,6 +38,7 @@ interface QuestionScreenProps {
   playerName: string;
   questions: Question[];
   onFinish: (results: QuestionResult[]) => void;
+  onHome?: () => void;
 }
 
 /**
@@ -48,7 +51,7 @@ interface QuestionScreenProps {
  * - 'remove' → animates blocks disappearing, TTS reads step.say
  * - 'prompt' → shows NumberPad, awaits answer
  */
-const QuestionScreen = ({ playerName, questions, onFinish }: QuestionScreenProps) => {
+const QuestionScreen = ({ playerName, questions, onFinish, onHome }: QuestionScreenProps) => {
   // ─── State ───
   const [currentIndex, setCurrentIndex] = useState(0);
   const [attempts, setAttempts] = useState(0);
@@ -71,9 +74,29 @@ const QuestionScreen = ({ playerName, questions, onFinish }: QuestionScreenProps
   const [speechText, setSpeechText] = useState('');
 
   const { speak } = useTTS();
+  const { startListening, stopListening, transcript, isListening, resetTranscript } = useSTT();
   const currentQ = questions[currentIndex];
   const resultsRef = useRef(results);
   resultsRef.current = results;
+
+  // Parse STT transcript into a number and submit it
+  useEffect(() => {
+    if (!transcript || phase !== 'answering') return;
+
+    const wordToNum: Record<string, number> = {
+      satu: 1, dua: 2, tiga: 3, empat: 4, lima: 5,
+      enam: 6, tujuh: 7, delapan: 8, sembilan: 9, sepuluh: 10,
+      sebelas: 11, 'dua belas': 12, 'tiga belas': 13, 'empat belas': 14, 'lima belas': 15,
+      'enam belas': 16, 'tujuh belas': 17, 'delapan belas': 18, 'sembilan belas': 19, 'dua puluh': 20,
+    };
+
+    const raw = transcript.trim().toLowerCase();
+    const parsed = wordToNum[raw] ?? parseInt(raw, 10);
+    if (parsed && parsed >= 1 && parsed <= 20) {
+      handleAnswerSelect(parsed);
+      resetTranscript();
+    }
+  }, [transcript]);
 
   // ─── Reset for new question ───
   useEffect(() => {
@@ -251,8 +274,26 @@ const QuestionScreen = ({ playerName, questions, onFinish }: QuestionScreenProps
         playerName={playerName}
         currentQuestion={currentIndex + 1}
         totalQuestions={questions.length}
-        onMenuAction={() => {}}
+        onMenuAction={(action) => {
+          if (action === 'finish') {
+            onFinish(resultsRef.current);
+          } else if (action === 'menu') {
+            onHome?.();
+          } else if (action === 'restart') {
+            setCurrentIndex(0);
+            setResults([]);
+          }
+        }}
       />
+
+      {/* Progress dots */}
+      <div className="fixed top-16 left-0 right-0 z-40">
+        <ProgressDots
+          total={questions.length}
+          current={currentIndex}
+          correct={results.filter(r => r.correct).map(r => r.questionIndex)}
+        />
+      </div>
 
       {/* Main content */}
       <main className="flex-1 flex flex-col items-center justify-start pt-20 pb-28 px-4 z-10 w-full max-w-3xl mx-auto">
@@ -323,9 +364,11 @@ const QuestionScreen = ({ playerName, questions, onFinish }: QuestionScreenProps
                 >
                   <NumberPad
                     onSelect={handleAnswerSelect}
+                    onMicPress={() => isListening ? stopListening() : startListening()}
                     selectedNumber={selectedAnswer}
                     disabled={phase !== 'answering'}
                     max={20}
+                    isListening={isListening}
                   />
                 </motion.div>
               )}
@@ -335,7 +378,7 @@ const QuestionScreen = ({ playerName, questions, onFinish }: QuestionScreenProps
       </main>
 
       {/* Mascot — fixed bottom-left */}
-      <div className="fixed bottom-4 left-4 z-40">
+      <div className="fixed bottom-4 left-4 z-20 pointer-events-none">
         <Mascot state={mascotState} />
       </div>
 
@@ -346,7 +389,7 @@ const QuestionScreen = ({ playerName, questions, onFinish }: QuestionScreenProps
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-28 left-4 right-4 z-30 max-w-lg mx-auto"
+            className="fixed top-20 left-4 right-4 z-30 max-w-lg mx-auto"
           >
             <HintCard
               level={hintLevel}

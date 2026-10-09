@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import CornerBar from '../components/CornerBar';
 import JiggleCard from '../components/JiggleCard';
 import useTTS from '../hooks/useTTS';
+import useLangflow from '../hooks/useLangflow';
 import { containerVariants, slideUp } from '../utils/springs';
 
 interface Mode {
@@ -29,6 +30,7 @@ interface HomeScreenProps {
 
 const HomeScreen = ({ playerName, onSelectMode, onLogout }: HomeScreenProps) => {
   const { speak, isSupported } = useTTS();
+  const { connected: langflowConnected } = useLangflow();
 
   useEffect(() => {
     if (isSupported) {
@@ -50,6 +52,12 @@ const HomeScreen = ({ playerName, onSelectMode, onLogout }: HomeScreenProps) => 
             Hai <span className="text-[#4A90D9]">{playerName}</span>!
           </h1>
           <p className="text-xl text-[#888] font-medium">Mau belajar apa hari ini?</p>
+          <div className="flex items-center justify-center gap-2 mt-3">
+            <span className={`w-2.5 h-2.5 rounded-full ${langflowConnected ? 'bg-green-500' : 'bg-gray-300'}`} />
+            <span className="text-xs font-medium text-[#888]">
+              {langflowConnected ? 'AI Langflow terhubung' : 'Mode offline — soal lokal'}
+            </span>
+          </div>
         </motion.div>
 
         <motion.div
