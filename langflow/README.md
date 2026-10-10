@@ -1,8 +1,8 @@
 # Arith Langflow Implementation
 
-> Architecture: [`Langflow-Architecture-Arith.md`](../Langflow-Architecture-Arith.md)
 > Target Langflow version: **1.11.5** (local)
 > Flow endpoint: `POST /api/v1/run/{flow_id}`
+> See the [main README](../README.md) for full project architecture.
 
 ## Components
 

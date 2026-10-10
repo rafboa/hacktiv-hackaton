@@ -1,4 +1,4 @@
-# Python / Langflow
+# ─── Python / Langflow ────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
@@ -6,40 +6,49 @@ __pycache__/
 venv/
 env/
 ENV/
+*.egg-info/
+*.egg
 
-# Database files (Langflow biasanya menyimpan data di SQLite)
+# Langflow SQLite databases
 *.db
 *.sqlite
 *.sqlite3
 
-# Environment Variables (PENTING untuk menjaga API Key DeepSeek)
+# ─── Environment variables ────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
 
-# IDE / OS Files
-.vscode/
-.idea/
-.DS_Store
-
-# Node
+# ─── Node ─────────────────────────────────────────────────────────────────────
 node_modules/
 
-# IBM Bob & MCP Server
-.bob/
+# ─── Build output ─────────────────────────────────────────────────────────────
 mcp-server/build/
+web/dist/
 build/
-langflow/flow/import_flow.py
+dist/
 
-# Logs
-logs
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
-# TypeScript
+# ─── TypeScript ───────────────────────────────────────────────────────────────
 *.tsbuildinfo
-
-# .md files that are unimportant for it to be published
-Langflow-Architecture-Arith.md
+*.local

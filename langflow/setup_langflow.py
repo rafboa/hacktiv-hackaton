@@ -103,7 +103,14 @@ def find_builtin(catalog: dict, key: str) -> dict:
     for comps in catalog.values():
         if isinstance(comps, dict) and key in comps:
             return comps[key]
-    raise KeyError(f"Component '{key}' not found in Langflow catalog")
+    categories = {
+        category: list(comps)[:20] if isinstance(comps, dict) else type(comps).__name__
+        for category, comps in catalog.items()
+    }
+    raise KeyError(
+        f"Component '{key}' not found in Langflow catalog. "
+        f"Catalog categories: {categories}"
+    )
 
 
 def apply_spec_values(node_schema: dict, spec_template: dict, spec_type: str, warnings: list):
@@ -123,7 +130,18 @@ def apply_spec_values(node_schema: dict, spec_template: dict, spec_type: str, wa
 
 
 def build_nodes(spec: dict, headers: dict, warnings: list) -> dict:
-    catalog = requests.get(f"{LANGFLOW_URL}/api/v1/all", headers=headers, timeout=60).json()
+    response = requests.get(f"{LANGFLOW_URL}/api/v1/all", headers=headers, timeout=60)
+    if not response.ok:
+        raise RuntimeError(
+            f"Failed to load Langflow component catalog ({response.status_code}): "
+            f"{response.text[:400]}"
+        )
+    catalog = response.json()
+    if not isinstance(catalog, dict):
+        raise RuntimeError(
+            "Langflow component catalog must be a JSON object, "
+            f"received {type(catalog).__name__}"
+        )
     compiled_cache: dict[str, tuple[str, dict]] = {}
     built = {}
 
